@@ -17,6 +17,10 @@ Index:
   platform_load_module(str8 module_path) -> void*
   platform_free_module(void* module) -> void
   platform_get_module_symbol(void* module, const char* symbol_name) -> platform_symbol
+@platform_monitor
+  platform_monitor_infos() -> MonitorInfo*
+@platform_processor
+  platform_processor_info() -> ProcessorInfo
 @platform_clipboard
   platform_get_clipboard() -> str8
   platform_set_clipboard(str8 text) -> void
@@ -45,6 +49,87 @@ external struct Process{
 	void* handle;
 };
 
+external struct MonitorInfo{
+  u8 name[256]; //null terminated
+	u8 index;
+	u16 refresh_rate;
+	u32 resolution_x;
+	u32 resolution_y;
+};
+
+external struct ProcessorInfo{
+	u8 name[65]; //null terminated
+	u8 type; //0 = x86
+	
+	union{
+		struct{ //64 bits
+			//os enabled
+			u32 os_avx : 1;
+			u32 os_avx512 : 1;
+			
+			//vendor
+			u32 amd : 1;
+			u32 intel : 1;
+			
+			//128 bit
+			u32 sse : 1;
+			u32 sse2 : 1;
+			u32 sse3 : 1;
+			u32 ssse3 : 1;
+			u32 sse41 : 1;
+			u32 sse42 : 1;
+			u32 sse4a : 1;
+			u32 aes : 1;
+			u32 sha : 1;
+			
+			//256 bit
+			u32 avx : 1;
+			u32 xop : 1;
+			u32 fma3 : 1;
+			u32 fma4 : 1;
+			u32 avx2 : 1;
+			
+			//512 bit
+			u32 avx512_f : 1;
+			u32 avx512_cd : 1;
+			
+			//knights landing
+			u32 avx512_pf : 1;
+			u32 avx512_er : 1;
+			
+			//skylake
+			u32 avx512_vl : 1;
+			u32 avx512_bw : 1;
+			u32 avx512_dq : 1;
+			
+			//cannon lake
+			u32 avx512_ifma : 1;
+			u32 avx512_vbmi : 1;
+			
+			//knights mill
+			u32 avx512_vpopcntdq : 1;
+			u32 avx512_4vnniw : 1;
+			u32 avx512_4fmaps : 1;
+			
+			//cascade lake
+			u32 avx512_vnni : 1;
+			
+			//cooper lake
+			u32 avx512_bf16 : 1;
+			
+			//ice lake
+			u32 avx512_vmbi2 : 1;
+			u32 gfni : 1;
+			u32 vaes : 1;
+			u32 avx512_vpclmul : 1;
+			u32 avx512_bitalg : 1;
+			
+			u32 padding : 27;
+		}x86;
+	};
+};
+static_assert(sizeof(ProcessorInfo) == 76, "ProcessorInfo has been resized; ensure it's padded correctly.");
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @platform_status
@@ -65,7 +150,7 @@ external void platform_fast_application_exit(b32 exit_fast);
 
 //Sleep for `time` milliseconds
 //  Windows: calls Sleep()
-//  Linux: TODO
+//  Linux: calls usleep()
 //  Mac: TODO
 external void platform_sleep(u32 time);
 
@@ -83,8 +168,8 @@ FORCE_INLINE void platform_cursor_position(vec2 position){ platform_cursor_posit
 
 
 //Loads a module from `module_path`
-//  Windows: calls LoadLibraryW()
-//  Linux: TODO
+//  Windows: calls LoadLibrary()
+//  Linux: calls dlopen()
 //  Mac: TODO
 external void* platform_load_module(str8 module_path);
 
@@ -100,6 +185,28 @@ external void platform_free_module(void* module);
 //  Mac: TODO
 external void* platform_get_module_symbol(void* module, const char* symbol_name);
 #define platform_get_module_function(module,symbol_name,symbol_sig) (GLUE(symbol_sig,__sig)*) platform_get_module_symbol((module),(symbol_name))
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @platform_monitor
+
+
+//Returns a temporary array of MonitorInfo structs
+//  Windows: calls EnumDisplayDevices(), EnumDisplaySettings()
+//  Linux: TODO
+//  Mac: TODO
+external MonitorInfo* platform_monitor_infos();
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @platform_processor
+
+
+//Returns a ProcessorInfo struct
+//  Windows: calls __cpuid()
+//  Linux: TODO
+//  Mac: TODO
+external ProcessorInfo platform_processor_info();
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -124,7 +231,7 @@ external void platform_set_clipboard(str8 text);
 
 
 //Gets a process by name
-// Windows: uses CreateToolhelp32Snapshot and iterates it's list of processes; opens with PROCESS_ALL_ACCESS TODO(sushi) options for this
+// Windows: calls CreateToolhelp32Snapshot(), Process32Next(), OpenProcess()
 //   Linux: TODO
 //     Mac: TODO
 //TODO(sushi) error codes
@@ -136,6 +243,10 @@ external Process platform_get_process_by_name(str8 name);
 //     out: an allocated buffer to write read data to
 //    size: size to read
 // returns 0 if read failed, non 0 otherwise
+//
+//  Windows: calls ReadProcessMemory()
+//  Linux: TODO
+//  Mac: TODO
 //TODO(sushi) error codes
 external u64 platform_process_read(Process p, upt address, void* out, upt size);
 
@@ -145,6 +256,10 @@ external u64 platform_process_read(Process p, upt address, void* out, upt size);
 //    data: data to be written to the process
 //    size: size of data to be written
 // returns 0 if write failed, non 0 otherwise
+//
+//  Windows: calls WriteProcessMemory()
+//  Linux: TODO
+//  Mac: TODO
 //TODO(sushi) error codes
 external u64 platform_process_write(Process p, upt address, void* data, upt size);
 
@@ -154,15 +269,15 @@ external u64 platform_process_write(Process p, upt address, void* data, upt size
 
 
 //Reserves and commits memory from the OS; returns zero if it fails
-//  Windows: VirtualAlloc(address, size, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE)
-//    Linux: mmap(address, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0)
-//      Mac: TODO
+//  Windows: calls VirtualAlloc()
+//  Linux: calls mmap()
+//  Mac: TODO
 external void* platform_allocate_memory(void* address, upt size);
 
 //Releases some memory from the OS; returns zero if it fails
-//  Windows: VirtualFree(address, 0, MEM_RELEASE)
-//    Linux: munmap(address, size)
-//      Mac: TODO
+//  Windows: calls VirtualFree()
+//  Linux: calls munmap()
+//  Mac: TODO
 external b32 platform_deallocate_memory(void* address, upt size);
 
 

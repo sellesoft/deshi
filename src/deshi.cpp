@@ -17,12 +17,10 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 
 `Command`
 ---------
-[!  ,*  , 21/04/12,Feature] command to print all avaliable keys for binding
-[!  ,*  , 21/04/12,Feature] command to print all keybinds, with (maybe) an option for printing only contextual keybinds
-[0  ,*  , 21/06/09,Feature] add device_info command (graphics card, sound device, monitor res, etc)
-[!! ,*  , 21/08/07,Feature] implement command chaining (separated by ';')
-[0  ,*  , 22/04/18,Feature] support running commands with nested aliases
-[!  ,** , 22/05/06,Feature] add 'exec' command which can run commands from a file
+[!! ,*  ,21/08/07,Feature] implement command chaining (separated by ';')
+[0  ,*  ,22/04/18,Feature] support running commands with nested aliases
+[!  ,** ,22/05/06,Feature] add 'exec' command which can run commands from a file
+[0  ,** ,24/01/01,Feature] update the 'add' command to be a 'calc' command
 
 `Console`
 ---------

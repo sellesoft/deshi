@@ -1264,6 +1264,27 @@ platform_cursor_position(s32 x, s32 y) {
 	NotImplemented;
 }
 
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @monitor
+
+MonitorInfo*
+platform_monitor_infos(){DPZoneScoped;
+	NotImplemented;
+	return 0;
+}
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @processor
+
+ProcessorInfo
+platform_processor_info(){DPZoneScoped;
+	NotImplemented;
+	return {};
+}
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @modules
+
 void* 
 platform_load_module(str8 module_path) {
 	void* handle = dlopen((char*)module_path.str, RTLD_NOW);
@@ -1281,6 +1302,9 @@ platform_get_module_symbol(void* module, const char* symbol_name) {
 	return 0;
 }
 
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @clipboard
+
 str8 
 platform_get_clipboard() {
 	NotImplemented;
@@ -1291,6 +1315,9 @@ void
 platform_set_clipboard(str8 text) {
 	NotImplemented;
 }
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory
 
 void*
 platform_allocate_memory(void* address, upt size){DPZoneScoped;

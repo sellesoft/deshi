@@ -29,6 +29,7 @@
 Index:
 @context
 @enums
+@device
 @buffer
 @image
 @descriptor
@@ -475,6 +476,23 @@ typedef Type GraphicsCommandType; enum{
 	GraphicsCommandType_Set_Scissor,
 	GraphicsCommandType_Set_Depth_Bias,
 };
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @device
+
+
+typedef struct GraphicsDeviceInfo{
+	u8 api_name[15]; //null terminated
+	u8 api_version_major;
+	u16 api_version_minor;
+	u16 api_version_patch;
+	u32 driver_version;
+	u8 device_name[104]; //null terminated
+}GraphicsDeviceInfo;
+
+//Returns a temporary array of GraphicsDeviceInfo structs
+GraphicsDeviceInfo* graphics_device_infos();
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////

@@ -13,6 +13,7 @@ Index:
 @gl_vars
 @gl_utils
 @graphics_context
+@graphics_device
 @graphics_buffer
 @graphics_image
 @graphics_descriptor
@@ -1105,6 +1106,39 @@ graphics_cleanup(){
 	//TODO(delle) save pipelines in GL4.1 (glGetProgramBinary)
 	//TODO(delle) save graphics settings to config
 	glFinish();
+}
+
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @graphics_device
+//!ref: https://www.khronos.org/opengl/wiki/OpenGL_Context
+
+
+GraphicsDeviceInfo*
+graphics_device_infos(){
+	GraphicsDeviceInfo* result = 0;
+	
+	if(opengl_context){
+		array_init(result, 1, deshi_temp_allocator);
+		
+		GraphicsDeviceInfo* info = array_push(result);
+		CopyMemory(info->api_name, "OpenGL", 6);
+		
+		int major = 0;
+		glGetIntegerv(GL_MAJOR_VERSION, &major);
+		info->api_version_major = (u8)major;
+		
+		int minor = 0;
+		glGetIntegerv(GL_MINOR_VERSION, &minor);
+		info->api_version_minor = (u16)minor;
+		
+		const char* renderer = (const char*)glGetString(GL_RENDERER);
+		if(renderer	){
+			CopyMemory(info->device_name, renderer, Min(103, strlen(renderer)));
+		}
+	}
+	
+	return result;
 }
 
 

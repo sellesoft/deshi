@@ -4,10 +4,13 @@ Index:
 @helpers
 @callback
 @platform
+@modules
+@monitor
+@clipboard
+@process
+@memory
 @stopwatch
 @file
-@modules
-@clipboard
 @threading
 @window
 @networking
@@ -614,6 +617,233 @@ platform_cursor_position(s32 x, s32 y){DPZoneScoped;
 	DeshInput->screenMouseY = y;
 }
 
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @modules
+void*
+platform_load_module(str8 module_path){DPZoneScoped;
+	wchar_t* wmodule_path = wchar_from_str8(module_path, 0, deshi_temp_allocator);
+	return ::LoadLibraryW(wmodule_path);
+}
+
+void
+platform_free_module(void* module){DPZoneScoped;
+	::FreeLibrary((HMODULE)module);
+}
+
+#if COMPILER_CLANG
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wmicrosoft-cast"
+#endif //#if COMPILER_CLANG
+void*
+platform_get_module_symbol(void* module, const char* symbol_name){DPZoneScoped;
+	return (void*)::GetProcAddress((HMODULE)module, symbol_name);
+}
+#if COMPILER_CLANG
+#  pragma clang diagnostic pop
+#endif //#if COMPILER_CLANG
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @monitor
+MonitorInfo* platform_monitor_infos(){DPZoneScoped;
+	MonitorInfo* result;
+	array_init(result, 4, deshi_temp_allocator);
+	
+	DWORD device_index = 0;
+	DISPLAY_DEVICE device = {sizeof(DISPLAY_DEVICE)};
+	DEVMODEW mode = {sizeof(DEVMODEW)};
+	while(::EnumDisplayDevicesW(NULL, device_index, &device, 0)){
+		WCHAR device_name[32];
+		CopyMemory(device_name, device.DeviceName, 32);
+		
+		DWORD monitor_index = 0;
+		while(::EnumDisplayDevicesW(device_name, monitor_index, &device, 0)){
+			BOOL success = ::EnumDisplaySettingsW(device_name, ENUM_CURRENT_SETTINGS, &mode);
+			if(!success) break;
+			
+			MonitorInfo* monitor_info = array_push(result);
+			monitor_info->index = monitor_index;
+			monitor_info->resolution_x = (u32)mode.dmPelsWidth;
+			monitor_info->resolution_y = (u32)mode.dmPelsHeight;
+			monitor_info->refresh_rate = (u16)mode.dmDisplayFrequency;
+			
+			str8 name = str8_from_wchar(device.DeviceString, deshi_temp_allocator);
+			CopyMemory(monitor_info->name, name.str, Min(255, name.count));
+			
+			monitor_index += 1;
+		}
+		
+		device_index += 1;
+	}
+	
+	return result;
+}
+
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @processor
+ProcessorInfo platform_processor_info(){DPZoneScoped;
+	//!ref: https://github.com/Mysticial/FeatureDetector/blob/master/src/x86/cpu_x86.cpp
+	ProcessorInfo result = {0};
+	result.type = 0;
+	
+	int cpu_info[4] = {0};
+	
+	__cpuidex(cpu_info, 0, 0);
+	int n_ids = cpu_info[0];
+	
+	char vendor_name[13];
+	CopyMemory(vendor_name, &cpu_info[1], 4);
+	CopyMemory(vendor_name+4, &cpu_info[3], 4);
+	CopyMemory(vendor_name+8, &cpu_info[2], 4);
+	vendor_name[12] = '\0';
+	if(memcmp(vendor_name, "GenuineIntel", 12) == 0){
+		result.x86.intel = 1;
+	}else if(memcmp(vendor_name, "AuthenticAMD", 12) == 0){
+		result.x86.amd = 1;
+	}
+	
+	__cpuidex(cpu_info, 0x80000002, 0);
+	CopyMemory(result.name, cpu_info, sizeof(cpu_info));
+	__cpuidex(cpu_info, 0x80000003, 0);
+	CopyMemory(result.name+16, cpu_info, sizeof(cpu_info));
+	__cpuidex(cpu_info, 0x80000004, 0);
+	CopyMemory(result.name+32, cpu_info, sizeof(cpu_info));
+	
+	if(n_ids >= 0x00000001){
+		__cpuidex(cpu_info, 0x00000001, 0);
+		
+		result.x86.sse = (cpu_info[3] & ((int)1 << 25)) != 0;
+		result.x86.sse2 = (cpu_info[3] & ((int)1 << 26)) != 0;
+		result.x86.sse3 = (cpu_info[2] & ((int)1 << 0)) != 0;
+		
+		result.x86.ssse3 = (cpu_info[2] & ((int)1 << 9)) != 0;
+		result.x86.sse41 = (cpu_info[2] & ((int)1 << 19)) != 0;
+		result.x86.sse42 = (cpu_info[2] & ((int)1 << 20)) != 0;
+		result.x86.aes = (cpu_info[2] & ((int)1 << 25)) != 0;
+		
+		result.x86.avx = (cpu_info[2] & ((int)1 << 28)) != 0;
+		result.x86.fma3 = (cpu_info[2] & ((int)1 << 12)) != 0;
+		
+		b8 os_uses_xsave_xrstore = (cpu_info[2] & ((int)1 << 28)) != 0;
+		if(os_uses_xsave_xrstore && result.x86.avx){
+			u64 xcr_feature_mask = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
+			result.x86.os_avx = (xcr_feature_mask & 0x6) == 0x6;
+			if(result.x86.os_avx){
+				result.x86.os_avx512 = (xcr_feature_mask & 0xe6) == 0xe6;
+			}
+		}
+	}
+	
+	if(n_ids >= 0x00000007){
+		__cpuidex(cpu_info, 0x00000007, 0);
+		
+		result.x86.avx2 = (cpu_info[1] & ((int)1 << 26)) != 0;
+		result.x86.sha = (cpu_info[1] & ((int)1 << 29)) != 0;
+		
+		result.x86.avx512_f = (cpu_info[1] & ((int)1 << 16)) != 0;
+		result.x86.avx512_cd = (cpu_info[1] & ((int)1 << 28)) != 0;
+		result.x86.avx512_pf = (cpu_info[1] & ((int)1 << 26)) != 0;
+		result.x86.avx512_er = (cpu_info[1] & ((int)1 << 27)) != 0;
+		
+		result.x86.avx512_vl = (cpu_info[1] & ((int)1 << 31)) != 0;
+		result.x86.avx512_bw = (cpu_info[1] & ((int)1 << 30)) != 0;
+		result.x86.avx512_dq = (cpu_info[1] & ((int)1 << 17)) != 0;
+		
+		result.x86.avx512_ifma = (cpu_info[1] & ((int)1 << 21)) != 0;
+		result.x86.avx512_vbmi = (cpu_info[2] & ((int)1 << 1)) != 0;
+		
+		result.x86.avx512_vpopcntdq = (cpu_info[2] & ((int)1 << 14)) != 0;
+		result.x86.avx512_4vnniw = (cpu_info[3] & ((int)1 << 2)) != 0;
+		result.x86.avx512_4fmaps = (cpu_info[3] & ((int)1 << 3)) != 0;
+		
+		result.x86.avx512_vnni = (cpu_info[2] & ((int)1 << 11)) != 0;
+		
+		result.x86.avx512_vmbi2 = (cpu_info[2] & ((int)1 << 6)) != 0;
+		result.x86.gfni = (cpu_info[2] & ((int)1 << 8)) != 0;
+		result.x86.vaes = (cpu_info[2] & ((int)1 << 9)) != 0;
+		result.x86.avx512_vpclmul = (cpu_info[2] & ((int)1 << 10)) != 0;
+		result.x86.avx512_bitalg = (cpu_info[2] & ((int)1 << 12)) != 0;
+		
+		__cpuidex(cpu_info, 0x00000007, 1);
+		result.x86.avx512_bf16 = (cpu_info[0] & ((int)1 << 5)) != 0;
+	}
+	
+	__cpuidex(cpu_info, 0x80000000, 0);
+	if(cpu_info[0] >= 0x80000001){
+		__cpuidex(cpu_info, 0x80000001, 0);
+		
+		result.x86.sse4a = (cpu_info[2] & ((int)1 << 6)) != 0;
+		result.x86.fma4 = (cpu_info[2] & ((int)1 << 16)) != 0;
+		result.x86.xop = (cpu_info[2] & ((int)1 << 11)) != 0;
+	}
+	
+	return result;
+}
+
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @clipboard
+//!ref: Dear ImGui imgui.cpp@GetClipboardTextFn_DefaultImpl
+str8
+platform_get_clipboard(){DPZoneScoped;
+	str8 result{};
+	
+	if(::OpenClipboard(NULL) == NULL){
+		win32_log_last_error("OpenClipboard");
+		return result;
+	}
+	
+	HANDLE wchar_buffer_handle = ::GetClipboardData(CF_UNICODETEXT);
+	if(wchar_buffer_handle == NULL){
+		win32_log_last_error("GetClipboardData");
+		::CloseClipboard();
+		return result;
+	}
+	
+	if(const WCHAR* wchar_buffer = (const WCHAR*)::GlobalLock(wchar_buffer_handle)){
+		result.count = (s64)::WideCharToMultiByte(CP_UTF8, 0, wchar_buffer, -1, NULL, 0, NULL, NULL);
+		result.str   = (u8*)memory_talloc(result.count);
+		::WideCharToMultiByte(CP_UTF8, 0, wchar_buffer, -1, (LPSTR)result.str, (int)result.count, NULL, NULL);
+	}else{
+		win32_log_last_error("GlobalLock");
+	}
+	::GlobalUnlock(wchar_buffer_handle);
+	::CloseClipboard();
+	return result;
+}
+
+//!ref: Dear ImGui imgui.cpp@SetClipboardTextFn_DefaultImpl
+void
+platform_set_clipboard(str8 text){DPZoneScoped;
+	if(::OpenClipboard(NULL) == NULL){
+		win32_log_last_error("OpenClipboard");
+		return;
+	}
+	
+	int wchar_buffer_length = ::MultiByteToWideChar(CP_UTF8, 0, (const char*)text.str, text.count*sizeof(u8), NULL, 0);
+	HGLOBAL wchar_buffer_handle = ::GlobalAlloc(GMEM_MOVEABLE, (SIZE_T)wchar_buffer_length*sizeof(WCHAR));
+	if(wchar_buffer_handle == NULL){
+		win32_log_last_error("GlobalAlloc");
+		::CloseClipboard();
+		return;
+	}
+	
+	WCHAR* wchar_buffer = (WCHAR*)::GlobalLock(wchar_buffer_handle);
+	::MultiByteToWideChar(CP_UTF8, 0, (const char*)text.str, text.count*sizeof(u8), wchar_buffer, wchar_buffer_length);
+	::GlobalUnlock(wchar_buffer_handle);
+	::EmptyClipboard();
+	if(::SetClipboardData(CF_UNICODETEXT, wchar_buffer_handle) == NULL){
+		win32_log_last_error("SetClipboardData");
+		::GlobalFree(wchar_buffer_handle);
+	}
+	::CloseClipboard();
+}
+
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @process
 Process
 platform_get_process_by_name(str8 name){DPZoneScoped;
 	Process p{0};
@@ -647,6 +877,9 @@ platform_process_write(Process p, upt address, void* data, upt size){DPZoneScope
 	return 0;
 }
 
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory
 void*
 platform_allocate_memory(void* address, upt size){DPZoneScoped;
 	void* result = (void*)::VirtualAlloc((LPVOID)address, (SIZE_T)size, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
@@ -1665,90 +1898,6 @@ deshi__file_append_simple(str8 caller_file, upt caller_line, str8 path, void* da
 	}
 	
 	return (u64)bytes_written;
-}
-
-//~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @modules
-void*
-platform_load_module(str8 module_path){DPZoneScoped;
-	wchar_t* wmodule_path = wchar_from_str8(module_path, 0, deshi_temp_allocator);
-	return ::LoadLibraryW(wmodule_path);
-}
-
-void
-platform_free_module(void* module){DPZoneScoped;
-	::FreeLibrary((HMODULE)module);
-}
-
-#if COMPILER_CLANG
-#  pragma clang diagnostic push
-#  pragma clang diagnostic ignored "-Wmicrosoft-cast"
-#endif
-void*
-platform_get_module_symbol(void* module, const char* symbol_name){DPZoneScoped;
-	return (void*)::GetProcAddress((HMODULE)module, symbol_name);
-}
-#if COMPILER_CLANG
-#  pragma clang diagnostic pop
-#endif
-
-
-//~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @clipboard
-//!ref: Dear ImGui imgui.cpp@GetClipboardTextFn_DefaultImpl
-str8
-platform_get_clipboard(){DPZoneScoped;
-	str8 result{};
-	
-	if(::OpenClipboard(NULL) == NULL){
-		win32_log_last_error("OpenClipboard");
-		return result;
-	}
-	
-	HANDLE wchar_buffer_handle = ::GetClipboardData(CF_UNICODETEXT);
-	if(wchar_buffer_handle == NULL){
-		win32_log_last_error("GetClipboardData");
-		::CloseClipboard();
-		return result;
-	}
-	
-	if(const WCHAR* wchar_buffer = (const WCHAR*)::GlobalLock(wchar_buffer_handle)){
-		result.count = (s64)::WideCharToMultiByte(CP_UTF8, 0, wchar_buffer, -1, NULL, 0, NULL, NULL);
-		result.str   = (u8*)memory_talloc(result.count);
-		::WideCharToMultiByte(CP_UTF8, 0, wchar_buffer, -1, (LPSTR)result.str, (int)result.count, NULL, NULL);
-	}else{
-		win32_log_last_error("GlobalLock");
-	}
-	::GlobalUnlock(wchar_buffer_handle);
-	::CloseClipboard();
-	return result;
-}
-
-//!ref: Dear ImGui imgui.cpp@SetClipboardTextFn_DefaultImpl
-void
-platform_set_clipboard(str8 text){DPZoneScoped;
-	if(::OpenClipboard(NULL) == NULL){
-		win32_log_last_error("OpenClipboard");
-		return;
-	}
-	
-	int wchar_buffer_length = ::MultiByteToWideChar(CP_UTF8, 0, (const char*)text.str, text.count*sizeof(u8), NULL, 0);
-	HGLOBAL wchar_buffer_handle = ::GlobalAlloc(GMEM_MOVEABLE, (SIZE_T)wchar_buffer_length*sizeof(WCHAR));
-	if(wchar_buffer_handle == NULL){
-		win32_log_last_error("GlobalAlloc");
-		::CloseClipboard();
-		return;
-	}
-	
-	WCHAR* wchar_buffer = (WCHAR*)::GlobalLock(wchar_buffer_handle);
-	::MultiByteToWideChar(CP_UTF8, 0, (const char*)text.str, text.count*sizeof(u8), wchar_buffer, wchar_buffer_length);
-	::GlobalUnlock(wchar_buffer_handle);
-	::EmptyClipboard();
-	if(::SetClipboardData(CF_UNICODETEXT, wchar_buffer_handle) == NULL){
-		win32_log_last_error("SetClipboardData");
-		::GlobalFree(wchar_buffer_handle);
-	}
-	::CloseClipboard();
 }
 
 

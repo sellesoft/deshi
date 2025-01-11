@@ -246,6 +246,116 @@ void cmd_init(){
 		Log("cmd",(const char*)time_buffer);
 	}DESHI_CMD_END_NO_ARGS(daytime);
 	
+	DESHI_CMD_START(device_info, "Logs information about the graphics, sound, and monitor devices"){
+		MonitorInfo* monitors = platform_monitor_infos();
+		
+		dstr8 builder;
+		dstr8_init(&builder, STR8("Device Info\n-----------------\n"), deshi_temp_allocator);
+		
+		dstr8_append(&builder, STR8("Monitors:\n"));
+		if(monitors){
+			for_array(monitors){
+				dstr8_append(&builder, STR8("  "));
+				dstr8_append(&builder, {(u8*)it->name, (s64)strlen((char*)it->name)});
+				dstr8_append(&builder, STR8("\n"));
+				dstr8_append(&builder, STR8("    Resolution: "));
+				dstr8_append(&builder, it->resolution_x);
+				dstr8_append(&builder, STR8("x"));
+				dstr8_append(&builder, it->resolution_y);
+				dstr8_append(&builder, STR8("\n"));
+				dstr8_append(&builder, STR8("    Refresh Rate: "));
+				dstr8_append(&builder, it->refresh_rate);
+				dstr8_append(&builder, STR8("\n"));
+			}
+		}else{
+			dstr8_append(&builder, STR8("  No monitors found\n"));
+		}
+		
+		GraphicsDeviceInfo* graphics_devices = graphics_device_infos();
+		if(graphics_devices){
+			dstr8_append(&builder, STR8("Graphics Devices:\n"));
+			for_array(graphics_devices){
+				dstr8_append(&builder, STR8("  "));
+				dstr8_append(&builder, (char*)it->device_name);
+				dstr8_append(&builder, STR8("\n"));
+				dstr8_append(&builder, STR8("    API: "));
+				dstr8_append(&builder, (char*)it->api_name);
+				dstr8_append(&builder, STR8(" "));
+				dstr8_append(&builder, it->api_version_major);
+				dstr8_append(&builder, STR8("."));
+				dstr8_append(&builder, it->api_version_minor);
+				dstr8_append(&builder, STR8("."));
+				dstr8_append(&builder, it->api_version_patch);
+				dstr8_append(&builder, STR8("\n"));
+				dstr8_append(&builder, STR8("    Driver Version: "));
+				dstr8_append(&builder, it->driver_version);
+				dstr8_append(&builder, STR8("\n"));
+			}
+		}else{
+			dstr8_append(&builder, STR8("  No graphics devices found\n"));
+		}
+		
+		ProcessorInfo info = platform_processor_info();
+		dstr8_append(&builder, STR8("Processor Info:\n"));
+		dstr8_append(&builder, STR8("  "));
+		dstr8_append(&builder, (char*)info.name);
+		dstr8_append(&builder, STR8("\n"));
+		if(info.type == 0){
+			dstr8_append(&builder, STR8("    Vendor: "));
+			if(info.x86.amd) dstr8_append(&builder, STR8("AMD"));
+			if(info.x86.intel) dstr8_append(&builder, STR8("Intel"));
+			dstr8_append(&builder, STR8("\n"));
+			
+			dstr8_append(&builder, STR8("    OS Support: "));
+			if(info.x86.os_avx) dstr8_append(&builder, STR8("AVX "));
+			if(info.x86.os_avx512) dstr8_append(&builder, STR8("AVX512 "));
+			dstr8_append(&builder, STR8("\n"));
+			
+			dstr8_append(&builder, STR8("    SSE Support: "));
+			if(info.x86.sse) dstr8_append(&builder, STR8("SSE "));
+			if(info.x86.sse2) dstr8_append(&builder, STR8("SSE2 "));
+			if(info.x86.sse3) dstr8_append(&builder, STR8("SSE3 "));
+			if(info.x86.ssse3) dstr8_append(&builder, STR8("SSSE3 "));
+			if(info.x86.sse41) dstr8_append(&builder, STR8("SSE4.1 "));
+			if(info.x86.sse42) dstr8_append(&builder, STR8("SSE4.2 "));
+			if(info.x86.sse4a) dstr8_append(&builder, STR8("SSE4a "));
+			dstr8_append(&builder, STR8("\n"));
+			
+			dstr8_append(&builder, STR8("    AVX Support: "));
+			if(info.x86.avx) dstr8_append(&builder, STR8("AVX "));
+			if(info.x86.avx2) dstr8_append(&builder, STR8("AVX2 "));
+			if(info.x86.avx512_f) dstr8_append(&builder, STR8("AVX512_F "));
+			if(info.x86.avx512_cd) dstr8_append(&builder, STR8("AVX512_CD "));
+			if(info.x86.avx512_pf) dstr8_append(&builder, STR8("AVX512_PF "));
+			if(info.x86.avx512_er) dstr8_append(&builder, STR8("AVX512_ER "));
+			if(info.x86.avx512_vl) dstr8_append(&builder, STR8("AVX512_VL "));
+			if(info.x86.avx512_bw) dstr8_append(&builder, STR8("AVX512_BW "));
+			if(info.x86.avx512_dq) dstr8_append(&builder, STR8("AVX512_DQ "));
+			if(info.x86.avx512_ifma) dstr8_append(&builder, STR8("AVX512_IFMA "));
+			if(info.x86.avx512_vbmi) dstr8_append(&builder, STR8("AVX512_VBMI "));
+			if(info.x86.avx512_vpopcntdq) dstr8_append(&builder, STR8("AVX512_VPOCNTDQ "));
+			if(info.x86.avx512_4vnniw) dstr8_append(&builder, STR8("AVX512_4VNNIW "));
+			if(info.x86.avx512_4fmaps) dstr8_append(&builder, STR8("AVX512_4FMAPS "));
+			if(info.x86.avx512_vnni) dstr8_append(&builder, STR8("AVX512_VNNI "));
+			if(info.x86.avx512_bf16) dstr8_append(&builder, STR8("AVX512_BF16 "));
+			if(info.x86.avx512_vmbi2) dstr8_append(&builder, STR8("AVX512_VMBI2 "));
+			if(info.x86.avx512_vpclmul) dstr8_append(&builder, STR8("AVX512_VPCLMUL "));
+			if(info.x86.avx512_bitalg) dstr8_append(&builder, STR8("AVX512_BITALG "));
+			dstr8_append(&builder, STR8("\n"));
+			
+			dstr8_append(&builder, STR8("    Misc Support: "));
+			if(info.x86.aes) dstr8_append(&builder, STR8("AES "));
+			if(info.x86.sha) dstr8_append(&builder, STR8("SHA "));
+			if(info.x86.gfni) dstr8_append(&builder, STR8("GFNI "));
+			if(info.x86.vaes) dstr8_append(&builder, STR8("VAES "));
+			dstr8_append(&builder, STR8("\n"));
+		}
+		
+		dstr8_append(&builder, STR8("-----------------\n"));
+		
+		Log("cmd", dstr8_peek(&builder));
+	}DESHI_CMD_END_NO_ARGS(device_info);
+	
 	DESHI_CMD_START(dir, "List the contents of a directory"){
 		FixMe;
 		arrayT<File> files = {};file_search_directory(args[0]);

@@ -1855,6 +1855,48 @@ graphics_update(Window* window){DPZoneScoped;
 }
 
 
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @graphics_device
+
+
+GraphicsDeviceInfo*
+graphics_device_infos(){
+	if(vk_instance == VK_NULL_HANDLE){
+		return 0;
+	}
+	
+	u32 physical_device_count = 0;
+	vkEnumeratePhysicalDevices(vk_instance, &physical_device_count, 0);
+	if(physical_device_count == 0){
+		return 0;
+	}
+
+	GraphicsDeviceInfo* result = 0;
+	array_init(result, physical_device_count, deshi_temp_allocator);
+	
+	VkPhysicalDevice* physical_devices = (VkPhysicalDevice*)StackAlloc(physical_device_count * sizeof(VkPhysicalDevice));
+	vkEnumeratePhysicalDevices(vk_instance, &physical_device_count, physical_devices);
+	
+	for(u32 i = 0; i < physical_device_count; i += 1){
+		GraphicsDeviceInfo* info = array_push(result);
+		CopyMemory(info->api_name, "Vulkan", 6);
+		
+		VkPhysicalDeviceProperties props;
+		vkGetPhysicalDeviceProperties(physical_devices[i], &props);
+		
+		info->api_version_major = VK_VERSION_MAJOR(props.apiVersion);
+		info->api_version_minor = VK_VERSION_MINOR(props.apiVersion);
+		info->api_version_patch = VK_VERSION_PATCH(props.apiVersion);
+		
+		info->driver_version = props.driverVersion;
+		
+		CopyMemory(info->device_name, props.deviceName, Min(103, strlen(props.deviceName)));
+	}
+	
+	return result;
+}
+
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @buffer
 
