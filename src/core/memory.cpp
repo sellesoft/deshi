@@ -1531,8 +1531,6 @@ deshi__memory_temp_clear(){DPZoneScoped;
 	
 	DEBUG_PrintTempAction("Clearing temporary memory which used %zu bytes", g_memory->temp_arena.used);
 	
-	g_memory->temp_arena.cursor = g_memory->temp_arena.start;
-	g_memory->temp_arena.used = 0;
 	memory_clear_arena(&g_memory->temp_arena);
 }
 
