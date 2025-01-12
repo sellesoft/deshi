@@ -114,7 +114,6 @@ void cmd_run(str8 input){
 		str8* args = array_create(str8, 4, deshi_temp_allocator);
 		
 		//split command by spaces (treating double quoted strings as one item)
-		//TODO nested aliases
 		str8 cmd_input = command;
 		while(cmd_input){
 			str8_advance_while(&cmd_input, ' ');
@@ -185,7 +184,7 @@ void cmd_run(str8 input){
 						if(args_count < it->min_args){
 							LogW("cmd", "Command '",args[0],"' requires at least ",it->min_args," arguments");
 						}else if(args_count > it->max_args){
-							LogW("cmd", "Command '",args[0],"' requires at most  ",it->max_args," arguments");
+							LogW("cmd", "Command '",args[0],"' requires at most ",it->max_args," arguments");
 						}else{
 							it->func(args+1, args_count);
 						}
@@ -246,25 +245,94 @@ void cmd_init(){
 			}
 		}
 		
+		//expand any aliases in the second argument
+		str8* expanded_args = array_create(str8, 4, deshi_temp_allocator);
+		str8 cmd_input = args[1];
+		while(cmd_input){
+			str8_advance_while(&cmd_input, ' ');
+			if(!cmd_input) break;
+			
+			str8 word = cmd_input;
+			if(str8_index(word, 0).codepoint == '\"'){
+				str8_advance(&word);
+				word = str8_eat_until(word, '\"');
+				if(word){
+					array_push_value(expanded_args, word);
+					cmd_input.str    = word.str+word.count+1;
+					cmd_input.count -= word.count+2;
+				}else{
+					array_push_value(expanded_args, cmd_input);
+					break;
+				}
+			}else{
+				word = str8_eat_until(word, ' ');
+				if(word){
+					b32 aliased = false;
+					forE(deshi__cmd_aliases){
+						if(str8_equal(word, it->alias)){
+							str8 temp = it->actual;
+							while(temp){
+								str8_advance_while(&temp, ' ');
+								str8 before = temp;
+								str8_advance_until(&temp, ' ');
+								array_push_value(expanded_args, (str8{before.str, before.count-temp.count}));
+							}
+							aliased = true;
+							break;
+						}
+					}
+					if(!aliased) array_push_value(expanded_args, word);
+					
+					cmd_input.str    = word.str+word.count;
+					cmd_input.count -= word.count;
+				}else{
+					b32 aliased = false;
+					forE(deshi__cmd_aliases){
+						if(str8_equal(cmd_input, it->alias)){
+							str8 temp = it->actual;
+							while(temp){
+								str8_advance_while(&temp, ' ');
+								str8 before = temp;
+								str8_advance_until(&temp, ' ');
+								array_push_value(expanded_args, (str8{before.str, before.count-temp.count}));
+							}
+							aliased = true;
+							break;
+						}
+					}
+					if(!aliased) array_push_value(expanded_args, cmd_input);
+					break;
+				}
+			}
+		}
+		
+		//build expanded command string
+		dstr8 expanded_cmd;
+		dstr8_init(&expanded_cmd, {}, deshi_temp_allocator);
+		forI(array_count(expanded_args)){
+			if(i > 0) dstr8_append(&expanded_cmd, str8_lit(" "));
+			dstr8_append(&expanded_cmd, expanded_args[i]);
+		}
+		
 		//check if alias already exists
 		u32 idx = -1;
 		forE(deshi__cmd_aliases){
 			if(str8_equal(it->alias, args[0])){
-				idx = it-it_begin;
-				break;
+					idx = it-it_begin;
+					break;
 			}
 		}
 		if(idx == -1){
-			deshi__cmd_aliases.add({str8_copy(args[0], deshi_allocator), str8_copy(args[1], deshi_allocator)});
+			deshi__cmd_aliases.add({str8_copy(args[0], deshi_allocator), str8_copy(dstr8_peek(&expanded_cmd), deshi_allocator)});
 		}else{
-			memory_zfree(args[1].str);
-			deshi__cmd_aliases[idx].actual = str8_copy(args[1], deshi_allocator);
+			memory_zfree(deshi__cmd_aliases[idx].actual.str);
+			deshi__cmd_aliases[idx].actual = str8_copy(dstr8_peek(&expanded_cmd), deshi_allocator);
 		}
 	}DESHI_CMD_END(alias, CmdArgument_String, CmdArgument_String);
 	
 	DESHI_CMD_START(aliases, "Lists available aliases"){
 		forE(deshi__cmd_aliases){
-			Log("cmd", (const char*)it->alias.str,": ",(const char*)it->actual.str);
+			Log("cmd", (const char*)it->alias.str,": \"",(const char*)it->actual.str,"\"");
 		}
 	}DESHI_CMD_END_NO_ARGS(aliases);
 	
