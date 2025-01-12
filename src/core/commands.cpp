@@ -471,6 +471,20 @@ void cmd_init(){
 		}
 	}DESHI_CMD_END(dir, CmdArgument_String);
 	
+	DESHI_CMD_START(exec, "Executes commands from a file, running each line as a command"){
+		File* file = file_init(args[0], FileAccess_Read);
+		if(file){
+			defer{ file_deinit(file); };
+			
+			char buffer[1024];
+			while(str8 line = file_read_line(file, buffer, sizeof(buffer))){
+				str8_advance_while(&line, ' '); //skip leading whitespace
+				if(!line || str8_index(line, 0).codepoint == '#') continue; //skip empty lines and comments
+				cmd_run(line);
+			}
+		}
+	}DESHI_CMD_END(exec, CmdArgument_String);
+	
 	DESHI_CMD_START(file_exists, "Checks if a file exists"){
 		Log("cmd","File '",args[0],"' ",(file_exists(args[0])) ? "exists." : "does not exist.");
 	}DESHI_CMD_END(file_exists, CmdArgument_String);
