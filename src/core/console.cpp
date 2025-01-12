@@ -150,60 +150,45 @@ void console_init(){DPZoneScoped;
 		default_font = assets_font_create_from_memory_bdf(baked_font_gohufont_11_bdf.str, baked_font_gohufont_11_bdf.count, STR8("baked_gohufont_11_bdf"));
 	}
 	
-	uiStyle base = {0};
-	base.font = default_font;
-	base.font_height = 11;
-	base.text_color = color(255,255,255);
-	base.overflow = overflow_scroll;
-	base.text_wrap = text_wrap_none;
-	base.tab_spaces = 4;
-	base.sizing = size_normal;
-	
 	//initialize ui elements
-	console.ui.main = ui_begin_item(&base);{
-		uiItem*  main  = console.ui.main;
-		uiStyle* mains = &main->style;
-		main->id = STR8("console.main");
-		mains-> background_color = color(14,14,14);
-		mains->          display = display_flex;
-		mains->           sizing = size_percent;
-		mains->            width = 100;
-		mains->           height = 0;
-		mains->        paddingtl = {2,2};
-		mains->        paddingbr = {2,2};
-		mains->      positioning = pos_fixed;
-		mains->              pos = Vec2(-1,-1); //HACK(delle) for some reason, this item at 0,0 has a 1 pixel gap at the top and left
+	console.ui.main = ui_begin_item(0);{
+		console.ui.main->id = STR8("console.main");
+		console.ui.main->style.display = display_flex | display_vertical | display_reverse;
+		console.ui.main->style.positioning = pos_fixed;
+		console.ui.main->style.sizing = size_percent;
+		console.ui.main->style.width = 100;
+		console.ui.main->style.height = 0;
+		console.ui.main->style.padding = {2,2,2,2};
+		console.ui.main->style.background_color = color(14,14,14);
+		console.ui.main->style.font = default_font;
+		console.ui.main->style.font_height = 11;
+		console.ui.main->style.text_color = Color_White;
 		
-		console.ui.buffer = ui_begin_item(&base);{
-			uiItem*  buffer  = console.ui.buffer;
-			uiStyle* buffers = &buffer->style;
-			buffer->id = STR8("console.buffer");
-			buffers->           sizing = size_flex | size_percent_x; //fills the space not occupied by input box
-			buffers->           height = 1; //occupy as much vertical space as it can in the container
-			buffers->            width = 100; //100% the width of the container
-			buffers-> background_color = Color_Black;
-			buffers->        paddingtl = {2,2};
-			buffers->        paddingbr = {2,2};
+		console.ui.inputbox = ui_begin_item(0);{
+			console.ui.inputbox->id = STR8("console.main.inputbox");
+			console.ui.inputbox->style.background_color = Color_DarkGray;
+			console.ui.inputbox->style.sizing = size_percent_x; //this element's size is static so it doesnt flex
+			console.ui.inputbox->style.width = 100;
+			console.ui.inputbox->style.height = console.ui.inputbox->style.font->max_height + 2;
+			console.ui.inputbox->style.padding = {2,2,2,2};
+			console.ui.inputbox->style.content_align = {0.5,0.5};
+			console.ui.inputbox->style.overflow = overflow_scroll;
+			console.ui.inputbox->style.tab_spaces = 2;
+			console.ui.inputbox->style.text_wrap = text_wrap_none;
+			
+			console.ui.inputtext = ui_make_input_text(str8null, 0);
+			console.ui.inputtext->id = STR8("console.main.inputbox.inputtext");
+			console.ui.inputtext->style.sizing = size_percent;
+			console.ui.inputtext->style.size = {100,100};
 		}ui_end_item();
 		
-		console.ui.inputbox = ui_begin_item(&base);{
-			uiItem*  inputb  = console.ui.inputbox;
-			uiStyle* inputbs = &inputb->style;
-			inputb->id = STR8("console.inputbox");
-			inputbs->background_color = Color_DarkGray;
-			inputbs->sizing = size_percent_x; //this element's size is static so it doesnt flex
-			inputbs->width = 100;
-			inputbs->height = inputbs->font->max_height + 2;
-			inputbs->content_align = {0.5,0.5};
-			inputbs->tab_spaces = 2;
-			inputbs->paddingtl = {2,2};
-			inputbs->paddingbr = {2,2};
-			console.ui.inputtext = ui_make_input_text(str8null, 0);
-			uiItem* inputt = console.ui.inputtext;
-			uiStyle* inputts = &inputt->style;
-			inputt->id = STR8("console.inputtext");
-			inputts->sizing = size_percent;
-			inputts->size = {100,100};
+		console.ui.buffer = ui_begin_item(0);{
+			console.ui.buffer->id = STR8("console.main.buffer");
+			console.ui.buffer->style.sizing = size_flex | size_percent_x; //fills the space not occupied by input box
+			console.ui.buffer->style.height = 1; //occupy as much vertical space as it can in the container
+			console.ui.buffer->style.width = 100; //100% the width of the container
+			console.ui.buffer->style.padding = {2,2,2,2};
+			console.ui.buffer->style.background_color = Color_Black;
 		}ui_end_item();
 	}ui_end_item();
 	
@@ -241,21 +226,30 @@ void console_update(){DPZoneScoped;
 		}
 		
 		//next/previous input box history
-		if(g_ui->active == console.ui.inputtext){
+		if(g_ui->active == console.ui.inputtext && console.input_history.count > 0){
 			if(key_pressed(Key_UP)){
-				LogW("console","input history isnt implemented yet!");
 				console.input_history_index--;
 				if(console.input_history_index == -2){
 					console.input_history_index = console.input_history.count-1;
 				}
-				text_clear(&ui_get_input_text(console.ui.inputtext)->text);
-			}else if(key_pressed(Key_DOWN)){
-				LogW("console","input history isnt implemented yet!");
-				console.input_history_index++;
+				
 				if(console.input_history_index >= console.input_history.count){
 					console.input_history_index = -1;
+					text_clear(&ui_get_input_text(console.ui.inputtext)->text);
+				}else if(console.input_history_index != -1){
+					text_clear(&ui_get_input_text(console.ui.inputtext)->text);
+					text_insert_string(&ui_get_input_text(console.ui.inputtext)->text, console.input_history[console.input_history_index]);
 				}
-				text_clear(&ui_get_input_text(console.ui.inputtext)->text);
+			}else if(key_pressed(Key_DOWN)){
+				console.input_history_index++;
+				
+				if(console.input_history_index >= console.input_history.count){
+					console.input_history_index = -1;
+					text_clear(&ui_get_input_text(console.ui.inputtext)->text);
+				}else if(console.input_history_index != -1){
+					text_clear(&ui_get_input_text(console.ui.inputtext)->text);
+					text_insert_string(&ui_get_input_text(console.ui.inputtext)->text, console.input_history[console.input_history_index]);
+				}
 			}
 		}
 		
@@ -380,9 +374,17 @@ void console_update(){DPZoneScoped;
 	}ui_end_immediate_branch();
 	
 	if(g_ui->active == console.ui.inputtext && key_pressed(Key_ENTER)){
-		str8 command = ui_get_input_text(console.ui.inputtext)->text.buffer.fin;
+		str8 command = ui_input_text_peek(console.ui.inputtext);
+		
+		if(console.input_history.count == console.input_history.capacity){
+			memory_zfree(console.input_history[console.input_history.start].str);
+		}
+		console.input_history.add(str8_copy(command));
+		console.input_history_index = -1;
+		
 		Log("", CyanFormat("> "), command);
 		cmd_run(command);
+		
 		text_clear(&ui_get_input_text(console.ui.inputtext)->text);
 		console.scroll_to_bottom = 1;
 	}

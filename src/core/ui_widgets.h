@@ -112,6 +112,8 @@ struct uiInputText{
 
 #define ui_get_input_text(x) ((uiInputText*)(x))
 
+#define ui_input_text_peek(x) ((uiInputText*)(x))->text.buffer.fin
+
 uiItem* deshi__ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line);
 #define ui_make_input_text(preview, style) deshi__ui_make_input_text((preview), (style), str8l(__FILE__), __LINE__)
 

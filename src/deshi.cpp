@@ -27,13 +27,12 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!! ,*  ,21/06/16,Feature] tabbing so we can sort different kinds of info into each tab like Errors and Warnings
 [!! ,** ,21/12/23,Bug]     if the console fills up too much, it crashes
     you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
-[0  ,*  ,21/12/27,Feature] showing a command's help if tab is pressed when the command is already typed (or do python style ? thing)
 [!! ,*  ,22/01/13,Feature] config variable modification
 [0  ,*  ,22/01/13,Feature] simple terminal emulation (folder nav and filesystem)
 [!! ,*  ,22/04/18,Tweak]   draw \t correctly
-[!!!,** ,22/05/02,Feature] clipping so we only consider chunks that would be on screen
 [!! ,** ,22/05/02,Bug]     fix scrolling to bottom on new log
 [!!!,*  ,23/11/08,Feature] ctrl+f search
+[!  ,** ,24/01/11,Bug]     fix extra space below the input box when the console is open in big mode
 
 `File`
 ------
