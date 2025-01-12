@@ -21,7 +21,6 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 
 `Console`
 ---------
-[!! ,** ,21/04/12,Feature] add auto complete for commands and arguments
 [!! ,*  ,21/04/15,Feature] implement filtering console buffer by tags
 [0  ,** ,21/04/15,Feature] popout console state (require extra window creation)
 [!! ,*  ,21/06/16,Feature] tabbing so we can sort different kinds of info into each tab like Errors and Warnings

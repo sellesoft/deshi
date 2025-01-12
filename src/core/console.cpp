@@ -225,6 +225,43 @@ void console_update(){DPZoneScoped;
 			move_to_parent_last(&console.ui.main->node);
 		}
 		
+		//handle tab completion
+		if(g_ui->active == console.ui.inputtext && key_pressed(Key_TAB)){
+			Text* text = &ui_get_input_text(console.ui.inputtext)->text;
+			str8 input = ui_input_text_peek(console.ui.inputtext);
+			
+			//only try to complete if there's input and we're at the end of the input
+			if(input.count > 0 && text->cursor.pos == input.count){
+				//find commands that start with the input
+				Command* commands = cmd_list();
+				str8* matches = array_create(str8, 16, deshi_temp_allocator);
+				
+				for_array(commands){
+					if(str8_begins_with(it->name, input)){
+						array_push_value(matches, it->name);
+					}
+				}
+				
+				upt matches_count = array_count(matches);
+				if(matches_count == 1){
+					//exactly one match - complete it
+					text_clear(text);
+					text_insert_string(text, matches[0]);
+				}else if(matches_count > 1){
+					//multiple matches - show them
+					dstr8 builder;
+					dstr8_init(&builder, STR8("Matching commands:\n"), deshi_temp_allocator);
+					for_array(matches){
+						dstr8_append(&builder, STR8("  "));
+						dstr8_append(&builder, *it);
+						dstr8_append(&builder, STR8("\n"));
+					}
+					Log("console", dstr8_peek(&builder));
+					console.scroll_to_bottom = true;
+				}
+			}
+		}
+		
 		//next/previous input box history
 		if(g_ui->active == console.ui.inputtext && console.input_history.count > 0){
 			if(key_pressed(Key_UP)){
@@ -295,7 +332,7 @@ void console_update(){DPZoneScoped;
 	u32 linestofit = console.ui.buffer->height / console.ui.buffer->style.font_height;
 	
 	if(console.scroll_to_bottom){
-		console.scroll_to_bottom = 0;
+		console.scroll_to_bottom = false;
 		u32 rem = linestofit;
 		u32 idx = console.dictionary.count-1;
 		while(rem){
