@@ -82,90 +82,123 @@ void cmd_add(CmdFunc func, str8 name, str8 desc, Type* args, u32 arg_count){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //@run
 void cmd_run(str8 input){
-	arrayT<str8> args(deshi_temp_allocator);
-	
-	//split input by spaces (treating double quoted strings as one item)
-	//TODO nested aliases
+	//split input by semicolons and execute each command
 	while(input){
-		str8_advance_while(&input, ' ');
+		str8_advance_while(&input, ' '); //skip leading whitespace
 		if(!input) break;
 		
-		str8 word = input;
-		if(str8_index(word, 0).codepoint == '\"'){
-			str8_advance(&word);
-			word = str8_eat_until(word, '\"');
-			if(word){
-				args.add(word);
-				input.str    = word.str+word.count+1;
-				input.count -= word.count+2;
-			}else{
-				args.add(input);
+		//find next semicolon that's not in quotes
+		str8 command = input;
+		str8 cursor = input;
+		b32 in_quotes = false;
+		while(cursor){
+			if(str8_index(cursor, 0).codepoint == '\"'){
+				in_quotes = !in_quotes;
+			}else if(!in_quotes && str8_index(cursor, 0).codepoint == ';'){
+				command.count = cursor.str - command.str;
+				input.str = cursor.str + 1;
+				input.count = input.count - command.count - 1;
 				break;
 			}
-		}else{
-			word = str8_eat_until(word, ' ');
-			if(word){
-				b32 aliased = false;
-				forE(deshi__cmd_aliases){
-					if(str8_equal(word, it->alias)){
-						str8 temp = it->actual;
-						while(temp){
-							str8_advance_while(&temp, ' ');
-							str8 before = temp;
-							str8_advance_until(&temp, ' ');
-							args.add(str8{before.str, before.count-temp.count});
-						}
-						aliased = true;
-						break;
-					}
-				}
-				if(!aliased) args.add(word);
-				
-				input.str    = word.str+word.count;
-				input.count -= word.count;
-			}else{
-				b32 aliased = false;
-				forE(deshi__cmd_aliases){
-					if(str8_equal(input, it->alias)){
-						str8 temp = it->actual;
-						while(temp){
-							str8_advance_while(&temp, ' ');
-							str8 before = temp;
-							str8_advance_until(&temp, ' ');
-							args.add(str8{before.str, before.count-temp.count});
-						}
-						aliased = true;
-						break;
-					}
-				}
-				if(!aliased) args.add(input);
-				break;
-			}
+			str8_advance(&cursor);
 		}
-	}
-	
-	if(args.count){
-		u32 args_count = args.count-1;
-		b32 found = false;
-		forE(deshi__cmd_commands){
-			if(str8_equal(args[0], it->name)){
-				if(it->func){
-					if(args_count < it->min_args){
-						LogW("cmd", "Command '",args[0],"' requires at least ",it->min_args," arguments");
-					}else if(args_count > it->max_args){
-						LogW("cmd", "Command '",args[0],"' requires at most  ",it->max_args," arguments");
-					}else{
-						it->func(args.data+1, args_count);
-					}
+		if(!cursor){
+			input = str8{}; //no more semicolons
+		}
+		
+		//skip empty commands
+		str8_advance_while(&command, ' ');
+		if(!command) continue;
+		
+		//process single command
+		str8* args = array_create(str8, 4, deshi_temp_allocator);
+		
+		//split command by spaces (treating double quoted strings as one item)
+		//TODO nested aliases
+		str8 cmd_input = command;
+		while(cmd_input){
+			str8_advance_while(&cmd_input, ' ');
+			if(!cmd_input) break;
+			
+			str8 word = cmd_input;
+			if(str8_index(word, 0).codepoint == '\"'){
+				str8_advance(&word);
+				word = str8_eat_until(word, '\"');
+				if(word){
+					array_push_value(args, word);
+					cmd_input.str    = word.str+word.count+1;
+					cmd_input.count -= word.count+2;
 				}else{
-					LogW("cmd", "Command '",args[0],"' has no registered function");
+					array_push_value(args, cmd_input);
+					break;
 				}
-				found = true;
-				break;
+			}else{
+				word = str8_eat_until(word, ' ');
+				if(word){
+					b32 aliased = false;
+					forE(deshi__cmd_aliases){
+						if(str8_equal(word, it->alias)){
+							str8 temp = it->actual;
+							while(temp){
+								str8_advance_while(&temp, ' ');
+								str8 before = temp;
+								str8_advance_until(&temp, ' ');
+								array_push_value(args, (str8{before.str, before.count-temp.count}));
+							}
+							aliased = true;
+							break;
+						}
+					}
+					if(!aliased) array_push_value(args, word);
+					
+					cmd_input.str    = word.str+word.count;
+					cmd_input.count -= word.count;
+				}else{
+					b32 aliased = false;
+					forE(deshi__cmd_aliases){
+						if(str8_equal(cmd_input, it->alias)){
+							str8 temp = it->actual;
+							while(temp){
+								str8_advance_while(&temp, ' ');
+								str8 before = temp;
+								str8_advance_until(&temp, ' ');
+								array_push_value(args, (str8{before.str, before.count-temp.count}));
+							}
+							aliased = true;
+							break;
+						}
+					}
+					if(!aliased) array_push_value(args, cmd_input);
+					break;
+				}
 			}
 		}
-		if(!found){
-			LogW("cmd", "Unknown command '",args[0],"'");
+		
+		//execute the command
+		u32 args_count = array_count(args);
+		if(args_count){
+			args_count -= 1; //skip the command name
+			b32 found = false;
+			forE(deshi__cmd_commands){
+				if(str8_equal(args[0], it->name)){
+					if(it->func){
+						if(args_count < it->min_args){
+							LogW("cmd", "Command '",args[0],"' requires at least ",it->min_args," arguments");
+						}else if(args_count > it->max_args){
+							LogW("cmd", "Command '",args[0],"' requires at most  ",it->max_args," arguments");
+						}else{
+							it->func(args+1, args_count);
+						}
+					}else{
+						LogW("cmd", "Command '",args[0],"' has no registered function");
+					}
+					found = true;
+					break;
+				}
+			}
+			if(!found){
+				LogW("cmd", "Unknown command '",args[0],"'");
+			}
 		}
 	}
 }
