@@ -33,5 +33,6 @@ struct Alias{
 void cmd_add(CmdFunc func, str8 name, str8 desc, Type* args, u32 arg_count);
 void cmd_run(str8 input);
 void cmd_init();
+Command* cmd_list();
 
 #endif //DESHI_COMMANDS_H

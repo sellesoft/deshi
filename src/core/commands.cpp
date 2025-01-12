@@ -9,8 +9,8 @@
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //@vars
-local arrayT<Command> deshi__cmd_commands(deshi_allocator);
-local arrayT<Alias> deshi__cmd_aliases(deshi_allocator);
+local Command* deshi__cmd_commands;
+local Alias* deshi__cmd_aliases;
 local str8 deshi__last_cmd_desc;
 
 
@@ -36,8 +36,7 @@ local str8 deshi__last_cmd_desc;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //@add
 void cmd_add(CmdFunc func, str8 name, str8 desc, Type* args, u32 arg_count){
-	deshi__cmd_commands.add(Command{});
-	Command* cmd = &deshi__cmd_commands[deshi__cmd_commands.count-1];
+	Command* cmd = (Command*)array_push(deshi__cmd_commands);
 	cmd->func      = func;
 	cmd->name      = name;
 	cmd->desc      = desc;
@@ -135,7 +134,7 @@ void cmd_run(str8 input){
 				word = str8_eat_until(word, ' ');
 				if(word){
 					b32 aliased = false;
-					forE(deshi__cmd_aliases){
+					for_array(deshi__cmd_aliases){
 						if(str8_equal(word, it->alias)){
 							str8 temp = it->actual;
 							while(temp){
@@ -154,7 +153,7 @@ void cmd_run(str8 input){
 					cmd_input.count -= word.count;
 				}else{
 					b32 aliased = false;
-					forE(deshi__cmd_aliases){
+					for_array(deshi__cmd_aliases){
 						if(str8_equal(cmd_input, it->alias)){
 							str8 temp = it->actual;
 							while(temp){
@@ -178,7 +177,7 @@ void cmd_run(str8 input){
 		if(args_count){
 			args_count -= 1; //skip the command name
 			b32 found = false;
-			forE(deshi__cmd_commands){
+			for_array(deshi__cmd_commands){
 				if(str8_equal(args[0], it->name)){
 					if(it->func){
 						if(args_count < it->min_args){
@@ -207,6 +206,9 @@ void cmd_run(str8 input){
 //@init
 void cmd_init(){
 	DeshiStageInitStart(DS_CMD, DS_MEMORY, "Attempted to initialize Cmd module before initializing Memory module");
+	
+	array_init(deshi__cmd_commands, 32, deshi_allocator);
+	array_init(deshi__cmd_aliases, 8, deshi_allocator);
 	
 	DESHI_CMD_START(add, "Adds two numbers together"){
 		//TODO rework this to be 'calc' instead of just 'add'
@@ -238,7 +240,7 @@ void cmd_init(){
 		}
 		
 		//check if name is used by a command
-		forE(deshi__cmd_commands){
+		for_array(deshi__cmd_commands){
 			if(str8_equal(it->name, args[0])){
 				LogE("cmd", "Aliases can't use the same name as an existing command");
 				return;
@@ -268,7 +270,7 @@ void cmd_init(){
 				word = str8_eat_until(word, ' ');
 				if(word){
 					b32 aliased = false;
-					forE(deshi__cmd_aliases){
+					for_array(deshi__cmd_aliases){
 						if(str8_equal(word, it->alias)){
 							str8 temp = it->actual;
 							while(temp){
@@ -287,7 +289,7 @@ void cmd_init(){
 					cmd_input.count -= word.count;
 				}else{
 					b32 aliased = false;
-					forE(deshi__cmd_aliases){
+					for_array(deshi__cmd_aliases){
 						if(str8_equal(cmd_input, it->alias)){
 							str8 temp = it->actual;
 							while(temp){
@@ -316,14 +318,14 @@ void cmd_init(){
 		
 		//check if alias already exists
 		u32 idx = -1;
-		forE(deshi__cmd_aliases){
+		for_array(deshi__cmd_aliases){
 			if(str8_equal(it->alias, args[0])){
-					idx = it-it_begin;
+					idx = it - deshi__cmd_aliases;
 					break;
 			}
 		}
 		if(idx == -1){
-			deshi__cmd_aliases.add({str8_copy(args[0], deshi_allocator), str8_copy(dstr8_peek(&expanded_cmd), deshi_allocator)});
+			array_push_value(deshi__cmd_aliases, (Alias{str8_copy(args[0], deshi_allocator), str8_copy(dstr8_peek(&expanded_cmd), deshi_allocator)}));
 		}else{
 			memory_zfree(deshi__cmd_aliases[idx].actual.str);
 			deshi__cmd_aliases[idx].actual = str8_copy(dstr8_peek(&expanded_cmd), deshi_allocator);
@@ -331,7 +333,7 @@ void cmd_init(){
 	}DESHI_CMD_END(alias, CmdArgument_String, CmdArgument_String);
 	
 	DESHI_CMD_START(aliases, "Lists available aliases"){
-		forE(deshi__cmd_aliases){
+		for_array(deshi__cmd_aliases){
 			Log("cmd", (const char*)it->alias.str,": \"",(const char*)it->actual.str,"\"");
 		}
 	}DESHI_CMD_END_NO_ARGS(aliases);
@@ -492,7 +494,7 @@ void cmd_init(){
 	DESHI_CMD_START(help, "Logs description and usage of specified command"){
 		if(arg_count){
 			b32 found = false;
-			forE(deshi__cmd_commands){
+			for_array(deshi__cmd_commands){
 				if(str8_equal(it->name, args[0])){
 					Log("cmd", (const char*)it->desc.str);
 					Log("cmd", (const char*)it->usage.str);
@@ -511,7 +513,7 @@ void cmd_init(){
 	DESHI_CMD_START(list, "Lists available commands"){
 		dstr8 builder;
 		dstr8_init(&builder, {}, deshi_temp_allocator);
-		forE(deshi__cmd_commands){
+		for_array(deshi__cmd_commands){
 			dstr8_append(&builder, it->name);
 			dstr8_append(&builder, str8_lit(": "));
 			dstr8_append(&builder, it->desc);
@@ -771,3 +773,7 @@ void cmd_init(){
 #undef DESHI_CMD_START
 #undef DESHI_CMD_END_NO_ARGS
 #undef DESHI_CMD_END
+
+Command* cmd_list(){
+	return deshi__cmd_commands;
+}
