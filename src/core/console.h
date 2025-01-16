@@ -101,7 +101,8 @@ struct Console{
 	b32 open_pressed     = false;
 	b32 scroll_to_bottom = false;
 	
-	s64 scroll = 0;
+	u32 scroll = 0;
+	u32 total_lines = 0;  //total number of lines in the console
 	
 	struct{
 		uiItem* main;

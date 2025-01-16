@@ -23,6 +23,7 @@ void console_parse_message(str8 message, str8 tag, Type type, b32 from_logger, u
 				chunk.start = log_offset;
 				chunk.size = stream.str - dc.advance - chunk_start;
 				console.dictionary.add(chunk);
+				console.total_lines += 1;
 				log_offset += chunk.size+1;
 				chunk = {type,tag,chunk.fg,chunk.bg};
 				chunk.newline = 1;
@@ -125,6 +126,7 @@ void console_parse_message(str8 message, str8 tag, Type type, b32 from_logger, u
 		chunk.start = log_offset;
 		chunk.size = stream.str - chunk_start;
 		console.dictionary.add(chunk);
+		console.total_lines += 1;
 	}
 	if(!from_logger) Log("", message);
 }
@@ -153,7 +155,7 @@ void console_init(){DPZoneScoped;
 	//initialize ui elements
 	console.ui.main = ui_begin_item(0);{
 		console.ui.main->id = STR8("console.main");
-		console.ui.main->style.display = display_flex | display_vertical | display_reverse;
+		console.ui.main->style.display = display_flex;
 		console.ui.main->style.positioning = pos_fixed;
 		console.ui.main->style.sizing = size_percent;
 		console.ui.main->style.width = 100;
@@ -163,6 +165,15 @@ void console_init(){DPZoneScoped;
 		console.ui.main->style.font = default_font;
 		console.ui.main->style.font_height = 11;
 		console.ui.main->style.text_color = Color_White;
+		
+		console.ui.buffer = ui_begin_item(0);{
+			console.ui.buffer->id = STR8("console.main.buffer");
+			console.ui.buffer->style.sizing = size_flex | size_percent_x; //fills the space not occupied by input box
+			console.ui.buffer->style.height = 1; //occupy as much vertical space as it can in the container
+			console.ui.buffer->style.width = 100; //100% the width of the container
+			console.ui.buffer->style.padding = {2,2,2,2};
+			console.ui.buffer->style.background_color = Color_Black;
+		}ui_end_item();
 		
 		console.ui.inputbox = ui_begin_item(0);{
 			console.ui.inputbox->id = STR8("console.main.inputbox");
@@ -181,17 +192,9 @@ void console_init(){DPZoneScoped;
 			console.ui.inputtext->style.sizing = size_percent;
 			console.ui.inputtext->style.size = {100,100};
 		}ui_end_item();
-		
-		console.ui.buffer = ui_begin_item(0);{
-			console.ui.buffer->id = STR8("console.main.buffer");
-			console.ui.buffer->style.sizing = size_flex | size_percent_x; //fills the space not occupied by input box
-			console.ui.buffer->style.height = 1; //occupy as much vertical space as it can in the container
-			console.ui.buffer->style.width = 100; //100% the width of the container
-			console.ui.buffer->style.padding = {2,2,2,2};
-			console.ui.buffer->style.background_color = Color_Black;
-		}ui_end_item();
 	}ui_end_item();
 	
+	console.total_lines = 0;
 	console.initialized = true;
 	DeshiStageInitEnd(DS_CONSOLE);
 }
@@ -218,6 +221,16 @@ void console_update(){DPZoneScoped;
 		text_move_cursor_to_end(text, false);
 		text_delete_left(text);
 	}
+	
+	//console openness
+	if(console.open_target != console.open_amount){
+		f32 t = Min((f32)peek_stopwatch(console.open_timer) / console.open_dt, 1.0f);
+		console.ui.main->style.height = Math::lerp(console.open_amount, console.open_target, t);
+		if(console.ui.main->style.height / 100 == console.open_target){
+			console.open_amount = console.open_target;
+		}
+	}
+	u32 visible_lines = console.ui.buffer->height / (console.ui.buffer->style.font_height + console.ui.buffer->style.content_advance);
 	
 	if(console_is_open()){
 		//ensure that the console is the topmost UI item
@@ -265,7 +278,7 @@ void console_update(){DPZoneScoped;
 		//next/previous input box history
 		if(g_ui->active == console.ui.inputtext && console.input_history.count > 0){
 			if(key_pressed(Key_UP)){
-				console.input_history_index--;
+				console.input_history_index -= 1;
 				if(console.input_history_index == -2){
 					console.input_history_index = console.input_history.count-1;
 				}
@@ -278,7 +291,7 @@ void console_update(){DPZoneScoped;
 					text_insert_string(&ui_get_input_text(console.ui.inputtext)->text, console.input_history[console.input_history_index]);
 				}
 			}else if(key_pressed(Key_DOWN)){
-				console.input_history_index++;
+				console.input_history_index += 1;
 				
 				if(console.input_history_index >= console.input_history.count){
 					console.input_history_index = -1;
@@ -290,103 +303,107 @@ void console_update(){DPZoneScoped;
 			}
 		}
 		
-		//scroll the buffer
-		if(key_pressed(Key_PAGEDOWN) && (console.scroll < console.dictionary.count)){
+		//dont allow scrolling if content fits on screen
+		if(console.total_lines <= visible_lines){
+			console.scroll = 0;
+		}else if(key_pressed(Key_PAGEDOWN) && (console.scroll < console.dictionary.count)){
 			if(input_ctrl_down()){
 				console.scroll = console.dictionary.count;
 			}else{
-				console.scroll++;
+				console.scroll += 1;
 				while(console.scroll < console.dictionary.count && !console.dictionary[console.scroll].newline){
-					console.scroll++;
+					console.scroll += 1;
 				}
 			}
 		}else if(key_pressed(Key_PAGEUP) && (console.scroll > 0)){
 			if(input_ctrl_down()){
 				console.scroll = 0;
 			}else{
-				console.scroll--;
+				console.scroll -= 1;
 				while(console.scroll > 0 && !console.dictionary[console.scroll].newline){
-					console.scroll--;
+					console.scroll -= 1;
 				}
 			}
 		}else if(ui_item_hovered(console.ui.buffer, hovered_area)){
 			if(g_input->scrollY < 0 && console.scroll < console.dictionary.count){
 				forI(-g_input->scrollY){
-					console.scroll++;
+					console.scroll += 1;
 					while(console.scroll < console.dictionary.count && !console.dictionary[console.scroll].newline){
-						console.scroll++;
+						console.scroll += 1;
 					}
 				}
-			}else if(g_input->scrollY > 0 && console.scroll){
+			}else if(g_input->scrollY > 0 && console.scroll > 0){
 				forI(g_input->scrollY){
-					console.scroll--;
+					console.scroll -= 1;
 					while(console.scroll > 0 && !console.dictionary[console.scroll].newline){
-						console.scroll--;
+						console.scroll -= 1;
 					}
 				}
 			}
-			console.scroll = ClampMin(console.scroll, 0);
-		}
-	}
-	
-	u32 linestofit = console.ui.buffer->height / console.ui.buffer->style.font_height;
-	
-	if(console.scroll_to_bottom){
-		console.scroll_to_bottom = false;
-		u32 rem = linestofit;
-		u32 idx = console.dictionary.count-1;
-		while(rem){
-			if(console.dictionary[idx].newline) rem--;
-			idx--;
-			if(!idx) break;
-		}
-		console.scroll = (idx ? idx + 1 : 0);
-	}
-	
-	//console openness
-	if(console.open_target != console.open_amount){
-		console.ui.main->style.height = Math::lerp(console.open_amount, console.open_target, //TODO(sushi) change this to Nudge
-												   Min((f32)peek_stopwatch(console.open_timer) / console.open_dt, 1.f));
-		if(console.ui.main->style.height/100 == console.open_target){
-			console.open_amount = console.open_target;
 		}
 	}
 	
 	ui_begin_immediate_branch(console.ui.buffer);{
 		vec2 cursor = vec2::ZERO;
-		uiItem* line = ui_begin_item(0);
-		line->style.display = display_horizontal;
-		line->style.sizing = size_percent_x;
-		line->style.size = {100, f32(console.ui.buffer->style.font_height)};
-		line->id = STR8("console.line0");
-		u64 nlines = 0;
-		u64 i = console.scroll;
-		while(nlines < linestofit){
-			if(i>=console.dictionary.count) break;
-			//if console_chunk_render_arena isn't large enough, double the space for it
-			if(console.dictionary[i].size >= console.chunk_render_arena->size){
-				console.chunk_render_arena = memory_grow_arena(console.chunk_render_arena, console.chunk_render_arena->size);
+		if(visible_lines > 0 && console.dictionary.count > 0){
+			uiItem* line = ui_begin_item(0);
+			line->id = STR8("console.line0");
+			line->style.display = display_horizontal;
+			line->style.sizing = size_percent_x;
+			line->style.size = {100, f32(console.ui.buffer->style.font_height)};
+			
+			if(console.scroll_to_bottom){
+				console.scroll_to_bottom = false;
+				console.scroll = console.dictionary.count-1;
 			}
 			
-			if(console.dictionary[i].newline == 1 && nlines++){
-				ui_end_item(); 
-				line = ui_begin_item(&line->style);
-				line->id = to_dstr8v(deshi_temp_allocator, "console.line",nlines).fin;
+			//calculate max scroll by counting actual newlines to find the last visible line
+			u32 max_scroll = console.dictionary.count-1;
+			u32 lines_from_bottom = 0;
+			for(s32 i = console.dictionary.count-1; i >= 0; --i){
+				if(console.dictionary[i].newline){
+					lines_from_bottom += 1;
+					if(lines_from_bottom >= visible_lines){
+						max_scroll = i;
+						break;
+					}
+				}
+			}
+			console.scroll = ClampMax(console.scroll, max_scroll);
+			
+			//find the first line that should be visible based on scroll
+			u32 line_index = 0;
+			u32 dict_index = console.scroll;
+			while(line_index < visible_lines && dict_index < console.dictionary.count){
+				//if console_chunk_render_arena isn't large enough, double the space for it
+				//NOTE(delle) using >= because we need to account for the null terminator
+				//TODO(delle) do we really need to have a null terminator?
+				if(console.chunk_render_arena->used + console.dictionary[dict_index].size >= console.chunk_render_arena->size){
+					console.chunk_render_arena = memory_grow_arena(console.chunk_render_arena, console.chunk_render_arena->size);
+				}
+				
+				if(console.dictionary[dict_index].newline && line_index++ != 0){
+					ui_end_item();
+					line = ui_begin_item(&line->style);
+					line->id = to_dstr8v(deshi_temp_allocator, "console.line",line_index).fin;
+				}
+				
+				//get chunk text from the log file
+				file_set_cursor(console.logger->file, console.dictionary[dict_index].start);
+				file_read(console.logger->file, console.chunk_render_arena->start, console.dictionary[dict_index].size);
+				console.chunk_render_arena->start[console.dictionary[dict_index].size] = '\0';
+				
+				str8 out = {(u8*)console.chunk_render_arena->start, (s64)console.dictionary[dict_index].size};
+				uiItem* text = ui_make_text(out, &line->style);
+				text->id = to_dstr8v(deshi_temp_allocator, "console.text",dict_index).fin;
+				text->style.text_color = console.dictionary[dict_index].fg;
+				line->style.background_color = console.dictionary[dict_index].bg;
+				
+				dict_index += 1;
 			}
 			
-			//get chunk text from the log file
-			file_set_cursor(console.logger->file, console.dictionary[i].start);
-			file_read(console.logger->file, console.chunk_render_arena->start, console.dictionary[i].size);
-			console.chunk_render_arena->start[console.dictionary[i].size] = '\0';
-			
-			str8 out = {(u8*)console.chunk_render_arena->start, (s64)console.dictionary[i].size};
-			uiItem* text = ui_make_text(out, &line->style);
-			text->id = to_dstr8v(deshi_temp_allocator, "console.text",i).fin;
-			text->style.text_color = console.dictionary[i].fg;
-			
-			i++;
+			ui_end_item();
 		}
-		ui_end_item();
 		
 		uiItem* debug = ui_begin_item(0);
 		debug->style.positioning = pos_absolute;
@@ -413,17 +430,19 @@ void console_update(){DPZoneScoped;
 	if(g_ui->active == console.ui.inputtext && key_pressed(Key_ENTER)){
 		str8 command = ui_input_text_peek(console.ui.inputtext);
 		
-		if(console.input_history.count == console.input_history.capacity){
-			memory_zfree(console.input_history[console.input_history.start].str);
+		if(command.count > 0 && (console.input_history.count == 0 || !str8_equal_lazy(command, console.input_history[console.input_history.count-1]))){
+			if(console.input_history.count == console.input_history.capacity){
+				memory_zfree(console.input_history[console.input_history.start].str);
+			}
+			console.input_history.add(str8_copy(command));
+			console.input_history_index = -1;
 		}
-		console.input_history.add(str8_copy(command));
-		console.input_history_index = -1;
 		
 		Log("", CyanFormat("> "), command);
 		cmd_run(command);
 		
 		text_clear(&ui_get_input_text(console.ui.inputtext)->text);
-		console.scroll_to_bottom = 1;
+		console.scroll_to_bottom = true;
 	}
 }
 
