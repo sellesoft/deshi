@@ -2385,6 +2385,10 @@ window_set_cursor_mode(Window* window, CursorMode mode){DPZoneScoped;
 			POINT p{window->center.x, window->center.y};
 			::ClientToScreen((HWND)window->handle, &p);
 			::SetCursorPos(p.x, p.y);
+			g_input->mouseX = window->center.x;
+			g_input->mouseY = window->center.y;
+			g_input->realMouseX = window->center.x;
+			g_input->realMouseY = window->center.y;
 			
 			//hide cursor
 			::SetCursor(0);

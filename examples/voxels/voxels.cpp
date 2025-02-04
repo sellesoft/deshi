@@ -135,7 +135,7 @@ int main(int args_count, char** args){
 			if(key_pressed(Key_C)){
 				window_set_cursor_mode(window, (window->cursor_mode == CursorMode_FirstPerson) ? CursorMode_Default : CursorMode_FirstPerson);
 			}
-			if(key_down(Mouse_RIGHT)){
+			if(key_pressed(Mouse_RIGHT)){
 				window_set_cursor_mode(window, CursorMode_FirstPerson);
 			}
 			if(window->cursor_mode == CursorMode_FirstPerson){
