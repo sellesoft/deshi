@@ -469,6 +469,7 @@ typedef Type GraphicsCommandType; enum{
 	GraphicsCommandType_Bind_Index_Buffer,
 	GraphicsCommandType_Bind_Descriptor_Set,
 	GraphicsCommandType_Push_Constant,
+	GraphicsCommandType_Draw,
 	GraphicsCommandType_Draw_Indexed,
 	GraphicsCommandType_Begin_Render_Pass,
 	GraphicsCommandType_End_Render_Pass,
@@ -1187,6 +1188,11 @@ typedef struct GraphicsCommand{
 			u32 size;
 		}push_constant;
 		
+		struct{ // draw
+			u64 vertex_count;
+			u64 vertex_offset;
+		}draw;
+		
 		struct{ // draw_indexed
 			u64 index_count;
 			u64 index_offset;
@@ -1235,6 +1241,9 @@ void graphics_cmd_bind_descriptor_set(Window* window, u32 set_index, GraphicsDes
 // Register the memory at 'data' to be pushed according to 'info'. The data provided must be kept valid
 // until the end of the following graphics_update call.
 void graphics_cmd_push_constant(Window* window, GraphicsShaderStage shader_stages, void* data, u32 offset, u32 size);
+
+// Draw vertexes in the currenly bound vertex buffer.
+void graphics_cmd_draw(Window* window, u32 vertex_count, u32 vertex_offset);
 
 // Draw vertexes based on the indexes in the currenly bound vertex and index buffers.
 void graphics_cmd_draw_indexed(Window* window, u32 index_count, u32 index_offset, u32 vertex_offset);

@@ -67,11 +67,19 @@ int main(){
 		mat4 view;
 		mat4 proj;
 	}camera;
+	camera.pos = {6.0f, 8.0f, -6.0f};
+	camera.rot = {28.0f, -45.0f, 0.0f};
+	camera.forward  = vec3_normalized(vec3_FORWARD() * mat4::RotationMatrix(camera.rot));
+	camera.right    = vec3_RIGHT();
+	camera.up       = vec3_UP();
 	camera.hfov = 90.0f;
 	camera.near_z = 0.1f;
 	camera.far_z = 10000.0f;
 	camera.proj = Math::PerspectiveProjectionMatrix(win->width, win->height, camera.hfov, camera.near_z, camera.far_z);
-	camera.view = Math::LookAtMatrix(Vec3(0,0,0), Vec3(0,0,1));
+#if DESHI_VULKAN
+	camera.proj.arr[5] *= -1;
+#endif //#if DESHI_VULKAN
+	camera.view = Math::LookAtMatrix(camera.pos, camera.pos + camera.forward).Inverse();
 	
 	//-////////////////////////////////////////////////////////////////////////////////////////////////
 	//// @offscreen
@@ -85,11 +93,11 @@ int main(){
 			f32 far;
 		}depth;
 	}offscreen;
-	offscreen.width  = 1028;
-	offscreen.height = 1028;
-	offscreen.light_hfov = 160.0f;
+	offscreen.width  = 1024;
+	offscreen.height = 1024;
+	offscreen.light_hfov = 90.0f;
 	offscreen.depth.near = 0.1f;
-	offscreen.depth.far = 1000.0f;
+	offscreen.depth.far = 256.0f;
 	
 	struct{
 		mat4 proj;
@@ -156,7 +164,7 @@ int main(){
 		offscreen_pipeline->dynamic_viewport = true;
 		offscreen_pipeline->dynamic_scissor = true;
 		
-		offscreen_pipeline->front_face = GraphicsFrontFace_CCW;
+		offscreen_pipeline->front_face = GraphicsFrontFace_CW;
 		offscreen_pipeline->culling = GraphicsPipelineCulling_Back;
 		offscreen_pipeline->polygon_mode = GraphicsPolygonMode_Fill;
 		offscreen_pipeline->line_width = 1.0f;
@@ -259,7 +267,7 @@ int main(){
 		vec3 light_pos;
 		f32 time;
 	}ubo_scene;
-	ubo_scene.light_pos = Vec3(0, -10, 0);
+	ubo_scene.light_pos = Vec3(-5.0f, 10.0f, -5.0f);
 	
 	GraphicsPipeline* scene_pipeline = graphics_pipeline_duplicate(offscreen_pipeline);
 	{
@@ -384,7 +392,7 @@ int main(){
 	}
 	
 	GraphicsBuffer* debug_quad_ubo_buffer = graphics_buffer_create(0, sizeof(offscreen.depth), GraphicsBufferUsage_UniformBuffer,
-															  GraphicsMemoryProperty_HostStreamed, GraphicsMemoryMapping_Persistent);
+																   GraphicsMemoryProperty_HostStreamed, GraphicsMemoryMapping_Persistent);
 	debug_quad_ubo_buffer->debug_name = str8l("<shadows> debug quad ubo buffer");
 	CopyMemory(graphics_buffer_mapped_data(debug_quad_ubo_buffer), &offscreen.depth, sizeof(offscreen.depth));
 	
@@ -444,10 +452,11 @@ int main(){
 	struct Box{
 		mat4 transform;
 		vec3 color;
-	}boxes[3];
+	}boxes[4];
 	boxes[0].color = Vec3(0,1,0);
-	boxes[1].color = Vec3(0,0,1);
-	boxes[2].color = Vec3(1,0,0);
+	boxes[1].color = Vec3(0,1,0);
+	boxes[2].color = Vec3(0,0,1);
+	boxes[3].color = Vec3(1,0,0);
 	
 	Model* box = assets_model_create_from_obj(str8l("box.obj"), 0);
 	
@@ -473,6 +482,9 @@ int main(){
 	auto update_offscreen_ubo = [&](){
 		ubo_offscreen.proj = Math::PerspectiveProjectionMatrix(offscreen.width, offscreen.height, offscreen.light_hfov,
 															   offscreen.depth.near, offscreen.depth.far);
+#if DESHI_VULKAN
+		ubo_offscreen.proj.arr[5] *= -1;
+#endif //#if DESHI_VULKAN
 		ubo_offscreen.view = Math::LookAtMatrix(ubo_scene.light_pos, Vec3(0,0,0)).Inverse();
 		CopyMemory(graphics_buffer_mapped_data(offscreen_ubo_buffer), &ubo_offscreen, sizeof(ubo_offscreen));
 	};
@@ -486,13 +498,26 @@ int main(){
 		CopyMemory(graphics_buffer_mapped_data(scene_ubo_buffer), &ubo_scene, sizeof(ubo_scene));
 	};
 	
-	b32 first_person = false;
+	b32 rotate_light = false;
+	b32 show_debug_quad = false;
+	vec2 mouse_positions[5] = {0};
+	vec2 mouse_positions2[5] = {0};
 	while(platform_update()){
 		if(key_pressed(Key_ESCAPE)){
 			break;
 		}
 		
-		if(first_person){
+		mouse_positions[g_time->frame % 5] = Vec2(g_input->mouseX, g_input->mouseY);
+		
+		if(key_pressed(Mouse_RIGHT)){
+			window_set_cursor_mode(win, CursorMode_FirstPerson);
+		}
+		mouse_positions2[g_time->frame % 5] = Vec2(g_input->mouseX, g_input->mouseY);
+		if(win->cursor_mode == CursorMode_FirstPerson){
+			if(key_released(Mouse_RIGHT)){
+				window_set_cursor_mode(win, CursorMode_Default);
+			}
+			
 			vec3 inputs = {0};
 			if(key_down(Key_W))     inputs += camera.forward;
 			if(key_down(Key_S))     inputs -= camera.forward;
@@ -506,7 +531,7 @@ int main(){
 			
 			if(rotdiffx || rotdiffy || inputs.x || inputs.y || inputs.z) {
 				camera.rot.y += rotdiffy;
-				camera.rot.x -= rotdiffx;
+				camera.rot.x += rotdiffx;
 				
 				f32 multiplier = 8.f;
 				if(input_lshift_down()) multiplier = 32.f;
@@ -534,7 +559,7 @@ int main(){
 			}else{
 				ubo_scene.light_pos.x += 0.01;
 			}
-			Log("shadows", ubo_scene.light_pos);
+			Log("shadows", "light_pos",ubo_scene.light_pos);
 		}
 		if(key_down(Key_LEFT)){
 			if(input_lshift_down()){
@@ -542,7 +567,7 @@ int main(){
 			}else{
 				ubo_scene.light_pos.x -= 0.01;
 			}
-			Log("shadows", ubo_scene.light_pos);
+			Log("shadows", "light_pos",ubo_scene.light_pos);
 		}
 		if(key_down(Key_UP)){
 			if(input_lshift_down()){
@@ -550,7 +575,7 @@ int main(){
 			}else{
 				ubo_scene.light_pos.z += 0.01;
 			}
-			Log("shadows", ubo_scene.light_pos);
+			Log("shadows", "light_pos",ubo_scene.light_pos);
 		}
 		if(key_down(Key_DOWN)){
 			if(input_lshift_down()){
@@ -558,25 +583,27 @@ int main(){
 			}else{
 				ubo_scene.light_pos.z -= 0.01;
 			}
-			Log("shadows", ubo_scene.light_pos);
+			Log("shadows", "light_pos",ubo_scene.light_pos);
 		}
 		if(input_lalt_down()){
 			ubo_scene.light_pos.x = roundf(ubo_scene.light_pos.x);
 			ubo_scene.light_pos.z = roundf(ubo_scene.light_pos.z);
-			Log("shadows", ubo_scene.light_pos);
+			Log("shadows", "light_pos",ubo_scene.light_pos);
+		}
+		if(key_pressed(Key_F)){
+			show_debug_quad = !show_debug_quad;
+		}
+		if(key_pressed(Key_G)){
+			rotate_light = !rotate_light;
+		}
+		
+		if(rotate_light){
+			ubo_scene.light_pos.x = cos(Radians(g_time->totalTime / 100.0f)) * 5.0f;
+			ubo_scene.light_pos.z = sin(Radians(g_time->totalTime / 100.0f)) * 5.0f;
 		}
 		
 		update_scene_ubo();
 		update_offscreen_ubo();
-		
-		if(key_pressed(Key_C)){
-			if(first_person){
-				window_set_cursor_mode(win, CursorMode_Default);
-			}else{
-				window_set_cursor_mode(win, CursorMode_FirstPerson);
-			}
-			first_person = !first_person;
-		}
 		
 		graphics_cmd_begin_render_pass(win, offscreen_framebuffer->render_pass, offscreen_framebuffer);
 		
@@ -586,8 +613,9 @@ int main(){
 		graphics_cmd_set_depth_bias(win, 1.25f, 0.f, 1.75f);
 		graphics_cmd_bind_pipeline(win, offscreen_pipeline);
 		graphics_cmd_bind_descriptor_set(win, 0, offscreen_descriptor_set);
-		draw_box(1, Vec3(0, 10, 0), Vec3(0,0,0), Vec3(100, 1, 100));
-		draw_box(0, Vec3(0, 3, 5), Vec3(0,0,0), vec3::ONE);
+		draw_box(0, Vec3(0, 3, 0), Vec3(0,0,0), vec3::ONE);
+		draw_box(1, Vec3(4, 2, 0), Vec3(0,0,0), vec3::ONE);
+		draw_box(2, Vec3(0, 0, 0), Vec3(0,0,0), Vec3(100, 1, 100));
 		
 		graphics_cmd_end_render_pass(win);
 		
@@ -598,12 +626,17 @@ int main(){
 		
 		graphics_cmd_bind_pipeline(win, scene_pipeline);
 		graphics_cmd_bind_descriptor_set(win, 0, scene_descriptor_set);
-		draw_box(1, Vec3(0, 10, 0), Vec3(0,0,0), Vec3(100, 1, 100));
-		draw_box(0, Vec3(0, 3, 5), Vec3(0,0,0), vec3::ONE);
-		draw_box(2, ubo_scene.light_pos, vec3::ZERO, vec3::ONE*0.2);
+		draw_box(0, Vec3(0, 3, 0), Vec3(0,0,0), vec3::ONE);
+		draw_box(1, Vec3(4, 2, 0), Vec3(0,0,0), vec3::ONE);
+		draw_box(2, Vec3(0, 0, 0), Vec3(0,0,0), Vec3(100, 1, 100));
+		draw_box(3, ubo_scene.light_pos, vec3::ZERO, vec3::ONE*0.2);
 		
-		//graphics_cmd_bind_pipeline(win, debug_quad_pipeline);
-		//graphics_cmd_bind_descriptor_set(win, 0, debug_quad_descriptor_set);
+		if(show_debug_quad){
+			graphics_cmd_set_viewport(win, vec2::ZERO, Vec2(400, 400));
+			graphics_cmd_bind_pipeline(win, debug_quad_pipeline);
+			graphics_cmd_bind_descriptor_set(win, 0, debug_quad_descriptor_set);
+			graphics_cmd_draw(win, 3, 0);
+		}
 		
 		graphics_cmd_end_render_pass(win);
 		

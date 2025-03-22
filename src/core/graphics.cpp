@@ -107,6 +107,14 @@ graphics_cmd_push_constant(Window* window, GraphicsShaderStage shader_stages, vo
 }
 
 void 
+graphics_cmd_draw(Window* window, u32 vertex_count, u32 vertex_offset){DPZoneScoped;
+	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
+	c->type = GraphicsCommandType_Draw;
+	c->draw.vertex_count = vertex_count;
+	c->draw.vertex_offset = vertex_offset;
+}
+
+void 
 graphics_cmd_draw_indexed(Window* window, u32 index_count, u32 index_offset, u32 vertex_offset){DPZoneScoped;
 	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
 	c->type = GraphicsCommandType_Draw_Indexed;

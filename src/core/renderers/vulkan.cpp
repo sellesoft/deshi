@@ -1789,6 +1789,11 @@ graphics_update(Window* window){DPZoneScoped;
 								   cmd.push_constant.offset, cmd.push_constant.size, cmd.push_constant.data);
 			}break;
 			
+			case GraphicsCommandType_Draw:{
+				// TODO(sushi) checks for dynamic state stuff having been set before this occurs
+				vkCmdDraw(cmdbuf, cmd.draw.vertex_count, 1, cmd.draw_indexed.vertex_offset, 0);
+			}break;
+			
 			case GraphicsCommandType_Draw_Indexed:{
 				// TODO(sushi) checks for dynamic state stuff having been set before this occurs
 				vkCmdDrawIndexed(cmdbuf, cmd.draw_indexed.index_count, 1, cmd.draw_indexed.index_offset, cmd.draw_indexed.vertex_offset, 0);

@@ -954,6 +954,108 @@ graphics_update(Window* window){DPZoneScoped;
 				}
 			}break;
 			
+			case GraphicsCommandType_Draw:{
+				if(!active_pipeline){
+					LogEGl("Attempted to push constants before a pipeline has been bound this frame.");
+					continue;
+				}
+				LogGl(3,"Drawing [",cmd->draw.vertex_count,"] vertices.");
+				
+				//NOTE(delle) the below vertex descriptions must be set once the buffer is bound, but it uses
+				// information from the active pipeline, so we have to perform it here (which sucks) since
+				// Vulkan doesn't require the pipeline or vertex buffer to be bound in a specific order
+				if(active_pipeline->vertex_input_attributes){
+					forI(array_count(active_pipeline->vertex_input_attributes)){
+						GLint size = 4;
+						GLenum type = GL_FLOAT;
+						GLboolean normalized = GL_FALSE;
+						switch(active_pipeline->vertex_input_attributes[i].format){
+							case GraphicsFormat_R32G32_Float:{
+								size = 2;
+								type = GL_FLOAT;
+								normalized = GL_FALSE;
+							}break;
+							case GraphicsFormat_R32G32B32_Float:{
+								size = 3;
+								type = GL_FLOAT;
+								normalized = GL_FALSE;
+							}break;
+							case GraphicsFormat_R8G8B8_SRGB:{
+								size = 3;
+								type = GL_UNSIGNED_BYTE;
+								normalized = GL_FALSE;
+							}break;
+							case GraphicsFormat_R8G8B8_UNorm:{
+								size = 3;
+								type = GL_UNSIGNED_BYTE;
+								normalized = GL_TRUE;
+							}break;
+							case GraphicsFormat_R8G8B8A8_SRGB:{
+								size = 4;
+								type = GL_UNSIGNED_BYTE;
+								normalized = GL_FALSE;
+							}break;
+							case GraphicsFormat_R8G8B8A8_UNorm:{
+								size = 4;
+								type = GL_UNSIGNED_BYTE;
+								normalized = GL_TRUE;
+							}break;
+							case GraphicsFormat_B8G8R8A8_UNorm:{
+								size = GL_BGRA;
+								type = GL_UNSIGNED_BYTE;
+								normalized = GL_TRUE;
+							}break;
+							case GraphicsFormat_Depth16_UNorm:{
+								size = 1;
+								type = GL_UNSIGNED_SHORT;
+								normalized = GL_TRUE;
+							}break;
+							case GraphicsFormat_Depth32_Float:{
+								size = 1;
+								type = GL_FLOAT;
+								normalized = GL_FALSE;
+							}break;
+							case GraphicsFormat_Depth32_Float_Stencil8_UInt:{
+								size = 1;
+								type = GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
+								normalized = GL_FALSE;
+							}break;
+							case GraphicsFormat_Depth24_UNorm_Stencil8_UInt:{
+								size = 1;
+								type = GL_UNSIGNED_INT_24_8_EXT;
+								normalized = GL_TRUE;
+							}break;
+							default:{
+								LogEGl("Unhandled GraphicsFormat when setting the vertex input attributes for a pipeline[",active_pipeline->debug_name,"]: ",active_pipeline->vertex_input_attributes[i].format,".");
+							}break;
+						}
+						u32 binding = active_pipeline->vertex_input_attributes[i].binding;
+						GLsizei stride = active_pipeline->vertex_input_bindings[binding].stride;
+						const void* offset = (void*)(u64)active_pipeline->vertex_input_attributes[i].offset;
+						
+						glVertexAttribPointer(i, size, type, normalized, stride, offset);
+						glEnableVertexAttribArray(i);
+					}
+				}
+				
+				GLint vertex_offset = (GLint)cmd->draw.vertex_offset;
+				GLsizei vertex_count = (GLsizei)cmd->draw.vertex_count;
+				switch(active_pipeline->polygon_mode){
+					case GraphicsPolygonMode_Point:{
+						glDrawArrays(GL_POINTS, vertex_offset, vertex_count);
+					}break;
+					case GraphicsPolygonMode_Line:{
+						glDrawArrays(GL_LINES, vertex_offset, vertex_count);
+					}break;
+					case GraphicsPolygonMode_Fill:{
+						glDrawArrays(GL_TRIANGLES, vertex_offset, vertex_count);
+					}break;
+					default:{
+						LogEGl("Unhandled pipeline polygon mode: ",active_pipeline->polygon_mode,".");
+					}break;
+				}
+			}break;
+			
 			case GraphicsCommandType_Draw_Indexed:{
 				if(!active_pipeline){
 					LogEGl("Attempted to push constants before a pipeline has been bound this frame.");
