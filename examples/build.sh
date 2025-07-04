@@ -170,7 +170,7 @@ fi
 examples_folder="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
 root_folder="$examples_folder/.."
 vulkan_folder="$VULKAN_SDK"
-tracy_folder="H:/src/tracy-0.7.8" #TODO(sushi) make this an env var
+tracy_folder="src/external/tracy"
 
 if [ $vulkan_override != 0 ]; then
   vulkan_folder=$vulkan_override

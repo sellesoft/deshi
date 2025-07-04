@@ -236,7 +236,6 @@ local DeshiStage deshiStage = DS_NONE;
 #undef global
 #undef defer
 #  include "TracyClient.cpp"
-#  include "tracy/Tracy.hpp"
 #define global static
 #define defer auto DEFER(__LINE__) = defer_dummy{} *[&]()
 #endif

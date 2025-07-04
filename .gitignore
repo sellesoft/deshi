@@ -1,6 +1,7 @@
 #folders
 .vscode/
 examples/*/build
+src/external/tracy
 
 #extensions
 *.code-workspace
@@ -10,6 +11,7 @@ examples/*/build
 *.rdc
 *.ctm
 *.smproj
+*.tracy
 
 #delle specific
 examples/shell.bat

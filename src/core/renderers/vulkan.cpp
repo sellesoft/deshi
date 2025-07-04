@@ -30,6 +30,20 @@
 // Used to assert a condition is true
 #define VulkanAssert(result, ...) if(!result) VulkanFatal(__VA_ARGS__)
 
+#ifdef TRACY_ENABLE
+#  include "tracy/TracyVulkan.hpp"
+#  define DPVkCreateContext(command_buffer) vk_tracy_context = TracyVkContext(vk_physical_device, vk_device, vk_graphics_queue, command_buffer)
+#  define DPVkDestroyContext TracyVkDestroy(vk_tracy_context)
+#  define DPVKZone(command_buffer) { TracyVkZone(vk_tracy_context, command_buffer, "Graphics")
+#  define DPVkCollect(command_buffer) TracyVkCollect(vk_tracy_context, command_buffer); }
+local TracyVkCtx vk_tracy_context;
+#else
+#  define DPVkCreateContext(command_buffer)
+#  define DPVkDestroyContext
+#  define DPVKZone(command_buffer)
+#  define DPVkCollect(command_buffer)
+#endif //#ifdef TRACY_ENABLE
+
 #define is_debugging g_graphics->debugging
 #define primary_allocator g_graphics->allocators.primary
 #define temp_allocator g_graphics->allocators.temp
@@ -1625,6 +1639,7 @@ graphics_update(Window* window){DPZoneScoped;
 	
 	g_graphics->stats = {};
 	
+	DPZoneStartN(zone_acquire_image, "Acquire Image", true);
 	VkResult result = vkAcquireNextImageKHR(vk_device, wininf->swapchain, UINT64_MAX, vk_semaphore_image_acquired, VK_NULL_HANDLE, &wininf->frame_index);
 	if(result == VK_ERROR_OUT_OF_DATE_KHR){
 		VulkanNotice("Window ", window->title, "'s surface has changed.");
@@ -1635,6 +1650,7 @@ graphics_update(Window* window){DPZoneScoped;
 	}else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR){
 		Assert(!"failed to acquire swapchain image");
 	}
+	DPZoneEnd(zone_acquire_image);
 	
 	
 	//// build commands ////
@@ -1665,11 +1681,12 @@ graphics_update(Window* window){DPZoneScoped;
 	auto cmdbuf = get_handle(wininf->command_buffer);
 	result = vkBeginCommandBuffer(cmdbuf, &cmd_buffer_info);
 	VulkanAssertVk(result, "failed to begin command buffer for window '", window->title, "'.");
+	DPVKZone(cmdbuf);
 	
 	forI(array_count(wininf->command_buffer->commands)){
 		auto cmd = wininf->command_buffer->commands[i];
 		switch(cmd.type){
-			case GraphicsCommandType_Begin_Render_Pass:{
+			case GraphicsCommandType_Begin_Render_Pass:{DPZoneScopedN("Begin Renderpass");
 				if(current_render_pass){
 					VulkanError("attempted to begin a render pass (", cmd.begin_render_pass.pass->debug_name, ") while one is already in progress (", current_render_pass->debug_name, ")");
 					return;
@@ -1716,14 +1733,14 @@ graphics_update(Window* window){DPZoneScoped;
 				current_render_pass = pass;
 			}break;
 			
-			case GraphicsCommandType_End_Render_Pass:{
+			case GraphicsCommandType_End_Render_Pass:{DPZoneScopedN("End Renderpass");
 				VulkanAssert(current_render_pass, "encountered end render pass command but no render pass has been started yet.");
 				vkCmdEndRenderPass(cmdbuf);
 				vk_debug_end_label(cmdbuf);
 				current_render_pass = 0;
 			}break;
 			
-			case GraphicsCommandType_Bind_Pipeline:{
+			case GraphicsCommandType_Bind_Pipeline:{DPZoneScopedN("Bind Pipeline");
 				auto pipeline = cmd.bind_pipeline.handle;
 				VulkanAssert(pipeline, "encountered bind pipeline command, but the given pipeline handle is null.");
 				currently_bound_pipeline = pipeline;
@@ -1735,7 +1752,7 @@ graphics_update(Window* window){DPZoneScoped;
 				vkCmdBindPipeline(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, get_handle(pipeline));
 			}break;
 			
-			case GraphicsCommandType_Set_Viewport:{
+			case GraphicsCommandType_Set_Viewport:{DPZoneScopedN("Set Viewport");
 				VkViewport v = {0};
 				v.x = cmd.set_viewport.offset.x;
 				v.y = cmd.set_viewport.offset.y;
@@ -1746,7 +1763,7 @@ graphics_update(Window* window){DPZoneScoped;
 				vkCmdSetViewport(cmdbuf, 0, 1, &v);
 			}break;
 			
-			case GraphicsCommandType_Set_Scissor:{
+			case GraphicsCommandType_Set_Scissor:{DPZoneScopedN("Set Scissor");
 				VkRect2D s = {0};
 				s.offset.x = cmd.set_scissor.offset.x;
 				s.offset.y = cmd.set_scissor.offset.y;
@@ -1755,22 +1772,22 @@ graphics_update(Window* window){DPZoneScoped;
 				vkCmdSetScissor(cmdbuf, 0, 1, &s);
 			}break;
 			
-			case GraphicsCommandType_Set_Depth_Bias:{
+			case GraphicsCommandType_Set_Depth_Bias:{DPZoneScopedN("Set Depth Bias");
 				vkCmdSetDepthBias(cmdbuf, cmd.set_depth_bias.constant, cmd.set_depth_bias.clamp, cmd.set_depth_bias.slope);
 			}break;
 			
-			case GraphicsCommandType_Bind_Vertex_Buffer:{
+			case GraphicsCommandType_Bind_Vertex_Buffer:{DPZoneScopedN("Bind Vertex Buffer");
 				VulkanAssert(cmd.bind_vertex_buffer.handle, "encountered bind vertex buffer command, but the buffer handle is null.");
 				VkDeviceSize offsets[1] = {0};
 				vkCmdBindVertexBuffers(cmdbuf, 0, 1, &get_handle(cmd.bind_vertex_buffer.handle), offsets);
 			}break;
 			
-			case GraphicsCommandType_Bind_Index_Buffer:{
+			case GraphicsCommandType_Bind_Index_Buffer:{DPZoneScopedN("Bind Index Buffer");
 				VulkanAssert(cmd.bind_index_buffer.handle, "encountered bind index buffer command, but the buffer handle is null.");
 				vkCmdBindIndexBuffer(cmdbuf, get_handle(cmd.bind_index_buffer.handle), 0, VK_INDEX_TYPE_UINT32);
 			}break;
 			
-			case GraphicsCommandType_Bind_Descriptor_Set:{
+			case GraphicsCommandType_Bind_Descriptor_Set:{DPZoneScopedN("Bind Descriptor Set");
 				VulkanAssert(currently_bound_pipeline, "encountered bind descriptor set command, but no pipeline has been bound yet.");
 				VulkanAssert(cmd.bind_descriptor_set.handle, "encountered bind descriptor set command, but a null handle was passed.");
 				VulkanAssert(get_handle(cmd.bind_descriptor_set.handle), "encountered bind descriptor set command, but the provided descriptor set has a null backend handle.");
@@ -1781,7 +1798,7 @@ graphics_update(Window* window){DPZoneScoped;
 										0, 0);
 			}break;
 			
-			case GraphicsCommandType_Push_Constant:{
+			case GraphicsCommandType_Push_Constant:{DPZoneScopedN("Push Constant");
 				VulkanAssert(currently_bound_pipeline, "encountered push constant command, but no pipeline has been bound yet.");
 				vkCmdPushConstants(cmdbuf, 
 								   get_handle(currently_bound_pipeline->layout),
@@ -1789,21 +1806,23 @@ graphics_update(Window* window){DPZoneScoped;
 								   cmd.push_constant.offset, cmd.push_constant.size, cmd.push_constant.data);
 			}break;
 			
-			case GraphicsCommandType_Draw:{
+			case GraphicsCommandType_Draw:{DPZoneScopedN("Draw");
 				// TODO(sushi) checks for dynamic state stuff having been set before this occurs
 				vkCmdDraw(cmdbuf, cmd.draw.vertex_count, 1, cmd.draw_indexed.vertex_offset, 0);
 			}break;
 			
-			case GraphicsCommandType_Draw_Indexed:{
+			case GraphicsCommandType_Draw_Indexed:{DPZoneScopedN("Draw Indexed");
 				// TODO(sushi) checks for dynamic state stuff having been set before this occurs
 				vkCmdDrawIndexed(cmdbuf, cmd.draw_indexed.index_count, 1, cmd.draw_indexed.index_offset, cmd.draw_indexed.vertex_offset, 0);
 			}break;
 		}
 	}
 	
+	DPVkCollect(cmdbuf);
 	result = vkEndCommandBuffer(cmdbuf);
 	VulkanAssertVk(result, "failed to end command buffer.");
 	
+	DPZoneStartN(zone_queue_submit, "Queue Submit", true);
 	VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	VkSubmitInfo submit_info{VK_STRUCTURE_TYPE_SUBMIT_INFO};
 	submit_info.waitSemaphoreCount = 1;
@@ -1815,9 +1834,11 @@ graphics_update(Window* window){DPZoneScoped;
 	submit_info.pSignalSemaphores = &vk_semaphore_render_complete;
 	result = vkQueueSubmit(vk_graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
 	VulkanAssertVk(result, "failed to submit commands to queue.");
+	DPZoneEnd(zone_queue_submit);
 	
 	if(wininf->remake_window) return;
 	
+	DPZoneStartN(zone_queue_present, "Queue Present", true);
 	VkPresentInfoKHR present_info{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
 	present_info.waitSemaphoreCount = 1;
 	present_info.pWaitSemaphores = &vk_semaphore_render_complete;
@@ -1826,6 +1847,7 @@ graphics_update(Window* window){DPZoneScoped;
 	present_info.pImageIndices = &wininf->frame_index;
 	present_info.pResults = 0;
 	result = vkQueuePresentKHR(vk_present_queue, &present_info);
+	DPZoneEnd(zone_queue_present);
 	
 	if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || wininf->remake_window){
 		VulkanNotice("remaking swapchain and frames for window '", window->title, "'.");
@@ -1841,6 +1863,7 @@ graphics_update(Window* window){DPZoneScoped;
 	
 	wininf->frame_index = (wininf->frame_index + 1) % wininf->min_image_count;
 	
+	DPZoneStartN(zone_queue_wait, "Queue Wait", true);
 	result = vkQueueWaitIdle(vk_graphics_queue);
 	switch(result){
 		case VK_ERROR_OUT_OF_HOST_MEMORY:   VulkanFatal("Host is out of memory!"); break;
@@ -1848,6 +1871,7 @@ graphics_update(Window* window){DPZoneScoped;
 		case VK_ERROR_DEVICE_LOST:          VulkanFatal("Device lost!"); break;
 		case VK_SUCCESS:default: break;
 	}
+	DPZoneEnd(zone_queue_wait);
 	
 	//update renderStats
 	g_graphics->stats.drawn_triangles += g_graphics->stats.drawn_indexes / 3;
@@ -1875,7 +1899,7 @@ graphics_device_infos(){
 	if(physical_device_count == 0){
 		return 0;
 	}
-
+	
 	GraphicsDeviceInfo* result = 0;
 	array_init(result, physical_device_count, deshi_temp_allocator);
 	
@@ -2950,12 +2974,14 @@ graphics_command_buffer_update(GraphicsCommandBuffer* x){DPZoneScoped;
 	auto result = vkAllocateCommandBuffers(vk_device, &info, &get_handle(x));
 	VulkanAssertVk(result, "failed to allocate command buffer.");
 	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)get_handle(x), (char*)x->debug_name.str);
+	DPVkCreateContext(get_handle(x));
 }
 
 void 
 graphics_command_buffer_destroy(GraphicsCommandBuffer* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsCommandBuffer pointer.");
 	VulkanInfo("destroying command buffer '", x->debug_name, "'.");
+	DPVkDestroyContext;
 	vkFreeCommandBuffers(vk_device, vk_command_pool, 1, &get_handle(x));
 	ZeroMemory(x, sizeof(GraphicsCommandBuffer));
 	memory_pool_delete(g_graphics->pools.command_buffers, x);

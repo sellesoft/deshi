@@ -1526,7 +1526,7 @@ assets_material_get_by_name(str8 name){DPZoneScoped;
 
 
 Model*
-assets_model_allocate(u32 batchCount){DPZoneScoped;DPZoneScoped;
+assets_model_allocate(u32 batchCount){DPZoneScoped;
 	Model* model = memory_pool_push(g_assets->model_pool);
 	model->batch_array = array<ModelBatch>::create_with_count(batchCount ? batchCount : 1, deshi_allocator).ptr;
 	return model;
