@@ -144,7 +144,6 @@ int main(){
 		offscreen_framebuffer->depth_image_view = graphics_image_view_allocate();
 		offscreen_framebuffer->depth_image_view->debug_name = str8l("<shadows> offscreen image view");
 		offscreen_framebuffer->depth_image_view->image = offscreen_image;
-		offscreen_framebuffer->depth_image_view->format = offscreen_image->format;
 		offscreen_framebuffer->depth_image_view->aspect_flags = GraphicsImageViewAspectFlags_Depth;
 		graphics_image_view_update(offscreen_framebuffer->depth_image_view);
 		

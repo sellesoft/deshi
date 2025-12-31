@@ -617,8 +617,23 @@ assets_mesh_get_by_name(str8 name){DPZoneScoped;
 // @texture
 
 
+GraphicsImageType
+texture_type_to_graphics(TextureType x){DPZoneScoped;
+	switch(x){
+		case TextureType_OneDimensional: return GraphicsImageType_1D;
+		case TextureType_TwoDimensional: return GraphicsImageType_2D;
+		case TextureType_ThreeDimensional: return GraphicsImageType_3D;
+		//case TextureType_Cube: return ;
+		case TextureType_Array_OneDimensional: return GraphicsImageType_1D;
+		case TextureType_Array_TwoDimensional: return GraphicsImageType_2D;
+		//case TextureType_Array_Cube: return ;
+	}
+	AssetsFatal("unknown TextureType: ", (u32)x);
+	return {};
+}
+
 GraphicsFilter
-texture_filter_to_render(TextureFilter x){DPZoneScoped;
+texture_filter_to_graphics(TextureFilter x){DPZoneScoped;
 	switch(x){
 		case TextureFilter_Nearest: return GraphicsFilter_Nearest;
 		case TextureFilter_Cubic:   return GraphicsFilter_Linear;
@@ -631,17 +646,21 @@ void
 upload_texture(Texture* texture){DPZoneScoped;
 	texture->image = graphics_image_allocate();
 	texture->image->debug_name = to_dstr8v(deshi_temp_allocator, "<assets> texture '", texture->name, "' image").fin;
-	texture->image->format = GraphicsFormat_R8G8B8A8_SRGB;
+	texture->image->format = GraphicsFormat_R8G8B8A8_SRGB; //TODO(delle) handle non RGBA formats properly
+	texture->image->type = texture_type_to_graphics(texture->type);
 	texture->image->usage = GraphicsImageUsage_Sampled | GraphicsImageUsage_Transfer_Destination;
 	texture->image->samples = GraphicsSampleCount_1;
 	texture->image->extent = {texture->width, texture->height, 4};
+	texture->image->layers = texture->layers;
+	texture->image->mip_levels = texture->mipmaps;
 	graphics_image_update(texture->image);
-	graphics_image_write(texture->image, texture->pixels, vec2i::ZERO, {texture->width, texture->height});
+	if(texture->pixels){
+		graphics_image_write(texture->image, texture->pixels, vec2i::ZERO, {texture->width, texture->height}, 0);
+	}
 	
 	texture->image_view = graphics_image_view_allocate();
 	texture->image_view->debug_name = to_dstr8v(deshi_temp_allocator, "<assets> texture '", texture->name, "' image view").fin;
 	texture->image_view->image = texture->image;
-	texture->image_view->format = texture->image->format;
 	texture->image_view->aspect_flags = GraphicsImageViewAspectFlags_Color;
 	graphics_image_view_update(texture->image_view);
 	
@@ -649,7 +668,7 @@ upload_texture(Texture* texture){DPZoneScoped;
 	texture->sampler->debug_name = to_dstr8v(deshi_temp_allocator, "<assets> texture '", texture->name, "' sampler").fin;
 	texture->sampler->mipmap_mode = GraphicsFilter_Nearest;
 	texture->sampler->mag_filter = 
-		texture->sampler->min_filter = texture_filter_to_render(texture->filter);
+		texture->sampler->min_filter = texture_filter_to_graphics(texture->filter);
 	switch(texture->uv_mode){
 		case TextureAddressMode_Repeat:{
 			texture->sampler->address_mode_u = 
@@ -689,6 +708,37 @@ upload_texture(Texture* texture){DPZoneScoped;
 }
 
 Texture*
+assets_texture_create(str8 name, u32 width, u32 height, u32 layers, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode){DPZoneScoped;
+	AssetsAssertName(name);
+	
+	u64 uid = __uid_of_name(name);
+	auto [index, found] = __find_resource(uid, g_assets->texture_map);
+	if(found){
+		AssetsExistanceWarning(name, Texture);
+		return g_assets->texture_map[index];
+	}
+	
+	AssetsNotice("creating texture '", name, "'.");
+	
+	Texture* texture = memory_pool_push(g_assets->texture_pool);
+	texture->name = name;
+	texture->uid = uid;
+	texture->width = (s32)width;
+	texture->height = (s32)height;
+	texture->layers = layers;
+	texture->mipmaps = 1;
+	texture->pixels = 0;
+	texture->format = format;
+	texture->type = type;
+	texture->filter = filter;
+	texture->uv_mode = uvMode;
+	upload_texture(texture);
+	
+	array_insert_value(g_assets->texture_map, index, texture);
+	return texture;
+}
+
+Texture*
 assets_texture_create_from_path(str8 name,
 								str8 path, 
 								ImageFormat format, 
@@ -714,7 +764,7 @@ assets_texture_create_from_path(str8 name,
 	Texture* texture = memory_pool_push(g_assets->texture_pool);
 	texture->name    = name;
 	texture->uid     = uid;
-	texture->format  = format; //TODO(delle) handle non RGBA formats properly
+	texture->format  = format;
 	texture->type    = type;
 	texture->filter  = filter;
 	texture->uv_mode = uvMode;
@@ -780,9 +830,10 @@ assets_texture_create_from_memory(void* data,
 		texture->mipmaps = 1;
 	}
 	
-	//reinterpret image as RGBA32  //TODO(delle) handle non RGBA formats properly
+	//reinterpret image as RGBA32
+	//TODO(delle) handle non RGBA formats properly
 	if(format != ImageFormat_RGBA){
-		AssetsWarning("non-rgba textures are currently reinterpreted as rgba (TODO(sushi) properly handle non-rgba formats)");
+		AssetsWarning("non-rgba textures are currently reinterpreted as rgba");
 		texture->pixels = (u8*)memory_alloc(width * height * 4);
 		
 		const u8* src = (const u8*)data;
@@ -848,7 +899,7 @@ assets_texture_delete(Texture* texture){DPZoneScoped;
 }
 
 void 
-assets_texture_update(Texture* texture, vec2i offset, vec2i extent){DPZoneScoped;
+assets_texture_update(Texture* texture, void* pixels, vec2i offset, vec2i extent, u32 layer){DPZoneScoped;
 	AssetsAssert(texture, "passed a null texture pointer.");
 	
 	if(offset.x > texture->width || offset.y > texture->height){
@@ -862,9 +913,93 @@ assets_texture_update(Texture* texture, vec2i offset, vec2i extent){DPZoneScoped
 		extent.y = Min(texture->height - offset.y, extent.y);
 	}
 	
-	if(!(extent.x && extent.y)) return;
+	if(!(extent.x && extent.y)){
+		return;
+	}
 	
-	graphics_image_write(texture->image, texture->pixels + offset.x*offset.y*texture->format*texture->format, offset, extent);
+	u8* update_pixels = 0;
+	if(pixels == 0){
+		update_pixels = texture->pixels;
+	}else{
+		//reinterpret image as RGBA32
+		//TODO(delle) handle non RGBA formats properly
+		if(texture->format != ImageFormat_RGBA){
+			AssetsWarning("non-rgba textures are currently reinterpreted as rgba");
+			update_pixels = (u8*)memory_alloc(texture->width * texture->height * 4);
+			
+			const u8* src = (const u8*)pixels;
+			u32* dst = (u32*)update_pixels;
+			switch(texture->format){
+				case ImageFormat_BW:{
+					for(s32 i = texture->width * texture->height; i > 0; i--){
+						u8 value = *src++;
+						// HACK(sushi) I am temporarily defining black pixels to be transparent here as it fixes an issue with bdf fonts
+						//             using black where it should be transparent, and that's the only place (along with the null texture) 
+						//             that actually use it. We need to decide a better fix eventually, though.
+						*dst++ = PackColorU32(value, value, value, (value? 0xFF : 0x00));
+					}
+				}break;
+				case ImageFormat_BWA:{
+					for(s32 i = texture->width * texture->height; i > 0; i--){
+						u8 value = *src++;
+						u8 alpha = *src++;
+						*dst++ = PackColorU32(value, value, value, alpha);
+					}
+				}break;
+				case ImageFormat_RGB:{
+					for(s32 i = texture->width * texture->height; i > 0; i--){
+						u8 r = *src++;
+						u8 g = *src++;
+						u8 b = *src++;
+						*dst++ = PackColorU32(r, g, b, 0xFF);
+					}
+				}break;
+			}
+		}else{
+			update_pixels = (u8*)pixels;
+		}
+	}
+	Assert(update_pixels != 0);
+	
+	graphics_image_write(texture->image, update_pixels + offset.x*offset.y*texture->format*texture->format, offset, extent, layer);
+}
+
+void
+assets_texture_update_from_file(Texture* texture, str8 path, vec2i offset, vec2i extent, u32 layer){DPZoneScoped;
+	AssetsAssert(texture, "passed a null texture pointer.");
+	AssetsAssert(path, "given an empty path.");
+	
+	if(offset.x > texture->width || offset.y > texture->height){
+		AssetsError("cannot update texture '", texture->name, "': the given offset ", offset, " is outside the bounds of the given texture.");
+		return;
+	}
+	
+	if(offset.x + extent.x > texture->width || offset.y + extent.y > texture->height){
+		AssetsWarning("while updating texture '", texture->name, "': the given offset ", offset, " plus the given extent ", extent, " go beyond the region of the given texture (size is ", Vec2i(texture->width, texture->height), "). The extent will be clipped to be within the image.");
+		extent.x = Min(texture->width - offset.x, extent.x);
+		extent.y = Min(texture->height - offset.y, extent.y);
+	}
+	
+	if(!(extent.x && extent.y)){
+		return;
+	}
+	
+	int width;
+	int height;
+	int depth;
+	u8* pixels  = (u8*)stbi_load((char*)path.str, &width, &height, &depth, STBI_rgb_alpha);
+	if(pixels == 0){
+		AssetsError("failed to update texture from path '", path, "' due to an stbi error: ", stbi_failure_reason());
+		return;
+	}
+	
+	if(extent.x != width || extent.y != height){
+		AssetsError("failed to update texture from path '", path, "' due to the loaded image dimensions differing from the texture's dimensions.");
+		return;
+	}
+	
+	graphics_image_write(texture->image, pixels + offset.x*offset.y*texture->format*texture->format, offset, extent, layer);
+	stbi_image_free(pixels); 
 }
 
 FORCE_INLINE Texture*

@@ -26,6 +26,7 @@ TODOs:
 #define DESHI_TEXTEDIT_H
 
 #include "kigu/unicode.h"
+#include <ctype.h>
 
 enum{
     Text_MoveWord     = 1 << 0,

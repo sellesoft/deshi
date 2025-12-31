@@ -88,6 +88,7 @@ local VkDebugUtilsMessengerEXT vk_debug_messenger = VK_NULL_HANDLE;
 local VkDevice vk_device = VK_NULL_HANDLE;
 local VkQueue vk_graphics_queue = VK_NULL_HANDLE;
 local VkQueue vk_present_queue = VK_NULL_HANDLE;
+local b8 vk_swapchain_colorspace_extension_enabled = false;
 
 struct QueueFamilyIndexesX{
 	b32 found_graphics_family;
@@ -253,6 +254,36 @@ graphics_image_type_to_vulkan(GraphicsImageType x){DPZoneScoped;
 	return {};
 }
 
+VkImageViewType
+graphics_image_type_to_vulkan_view(GraphicsImageType x, u32 layers){DPZoneScoped;
+	switch(x){
+		case GraphicsImageType_1D:{
+			if(layers > 1){
+				return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+			}else{
+				return VK_IMAGE_VIEW_TYPE_1D;
+			}
+		}
+		case GraphicsImageType_2D:{
+			if(layers > 1){
+				return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+			}else{
+				return VK_IMAGE_VIEW_TYPE_2D;
+			}
+		}
+		case GraphicsImageType_3D:{
+			if(layers > 1){
+				Assert(0);
+				return VK_IMAGE_VIEW_TYPE_3D;
+			}else{
+				return VK_IMAGE_VIEW_TYPE_3D;
+			}
+		}
+	}
+	Assert(0);
+	return {};
+}
+
 VkImageUsageFlags
 graphics_image_usage_to_vulkan(GraphicsImageUsage x){DPZoneScoped;
 	VkImageUsageFlags out = 0;
@@ -380,6 +411,8 @@ graphics_format_to_vulkan(GraphicsFormat x){DPZoneScoped;
 		case GraphicsFormat_R8G8B8A8_SRGB:               return VK_FORMAT_R8G8B8A8_SRGB;
 		case GraphicsFormat_R8G8B8A8_UNorm:              return VK_FORMAT_R8G8B8A8_UNORM;
 		case GraphicsFormat_B8G8R8A8_UNorm:              return VK_FORMAT_B8G8R8A8_UNORM;
+		case GraphicsFormat_R16_UInt:                    return VK_FORMAT_R16_UINT;
+		case GraphicsFormat_R16G16_UNorm:                return VK_FORMAT_R16G16_UNORM;
 		case GraphicsFormat_Depth16_UNorm:               return VK_FORMAT_D16_UNORM;
 		case GraphicsFormat_Depth32_Float:               return VK_FORMAT_D32_SFLOAT;
 		case GraphicsFormat_Depth32_Float_Stencil8_UInt: return VK_FORMAT_D32_SFLOAT_S8_UINT;
@@ -397,12 +430,35 @@ vulkan_format_to_graphics(VkFormat x){DPZoneScoped;
 		case VK_FORMAT_R8G8B8A8_SRGB:      return GraphicsFormat_R8G8B8A8_SRGB;
 		case VK_FORMAT_R8G8B8A8_UNORM:     return GraphicsFormat_R8G8B8A8_UNorm;
 		case VK_FORMAT_B8G8R8A8_UNORM:     return GraphicsFormat_B8G8R8A8_UNorm;
+		case VK_FORMAT_R16G16_UNORM:       return GraphicsFormat_R16G16_UNorm;
+		case VK_FORMAT_R16_UINT:           return GraphicsFormat_R16_UInt;
 		case VK_FORMAT_D16_UNORM:          return GraphicsFormat_Depth16_UNorm;
 		case VK_FORMAT_D32_SFLOAT:         return GraphicsFormat_Depth32_Float;
 		case VK_FORMAT_D32_SFLOAT_S8_UINT: return GraphicsFormat_Depth32_Float_Stencil8_UInt;
 		case VK_FORMAT_D24_UNORM_S8_UINT:  return GraphicsFormat_Depth24_UNorm_Stencil8_UInt;
 	}
 	VulkanFatal("unhandled VkFormat: ", (u32)x);
+	return {};
+}
+
+u32
+graphics_format_to_bytes(GraphicsFormat x){DPZoneScoped;
+	switch(x){
+		case GraphicsFormat_R32G32_Float:                return 8;
+		case GraphicsFormat_R32G32B32_Float:             return 12;
+		case GraphicsFormat_R8G8B8_UNorm:                return 3;
+		case GraphicsFormat_R8G8B8_SRGB:                 return 3;
+		case GraphicsFormat_R8G8B8A8_SRGB:               return 4;
+		case GraphicsFormat_R8G8B8A8_UNorm:              return 4;
+		case GraphicsFormat_B8G8R8A8_UNorm:              return 4;
+		case GraphicsFormat_R16_UInt:                    return 2;
+		case GraphicsFormat_R16G16_UNorm:                return 4;
+		case GraphicsFormat_Depth16_UNorm:               return 2;
+		case GraphicsFormat_Depth32_Float:               return 4;
+		case GraphicsFormat_Depth32_Float_Stencil8_UInt: return 8;
+		case GraphicsFormat_Depth24_UNorm_Stencil8_UInt: return 4;
+	}
+	VulkanFatal("invalid GraphicsFormat: ", (u32)x);
 	return {};
 }
 
@@ -614,6 +670,8 @@ create_image(u32 width,
 			 u32 mip_levels,
 			 VkSampleCountFlagBits num_samples,
 			 VkFormat format,
+			 VkImageType type,
+			 u32 layers,
 			 VkImageTiling tiling,
 			 VkImageUsageFlags usage,
 			 VkMemoryPropertyFlags properties,
@@ -621,14 +679,15 @@ create_image(u32 width,
 			 VkDeviceMemory* image_memory)
 {DPZoneScoped;
 	VulkanInfo("creating image.");
+	Assert(type != GraphicsImageType_3D, "not supported yet");
 	
 	VkImageCreateInfo image_info{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
-	image_info.imageType     = VK_IMAGE_TYPE_2D;
+	image_info.imageType     = type;
 	image_info.extent.width  = width;
 	image_info.extent.height = height;
 	image_info.extent.depth  = 1;
 	image_info.mipLevels     = mip_levels;
-	image_info.arrayLayers   = 1;
+	image_info.arrayLayers   = layers;
 	image_info.format        = format;
 	image_info.tiling        = tiling;
 	image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -651,18 +710,18 @@ create_image(u32 width,
 }
 
 VkImageView
-create_image_view(VkImage image, VkFormat format, VkImageAspectFlags aspect_flags, u32 mip_levels){DPZoneScoped;
+create_image_view(VkImage image, VkFormat format, VkImageViewType type, VkImageAspectFlags aspect_flags, u32 mip_levels, u32 layers){DPZoneScoped;
 	VulkanInfo("creating image view.");
 	
 	VkImageViewCreateInfo info{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
 	info.image    = image;
-	info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	info.viewType = type;
 	info.format   = format;
 	info.subresourceRange.aspectMask     = aspect_flags;
 	info.subresourceRange.baseMipLevel   = 0;
 	info.subresourceRange.levelCount     = mip_levels;
 	info.subresourceRange.baseArrayLayer = 0;
-	info.subresourceRange.layerCount     = 1;
+	info.subresourceRange.layerCount     = layers;
 	
 	VkImageView view{};
 	auto result = vkCreateImageView(vk_device, &info, vk_allocator, &view);
@@ -850,7 +909,7 @@ create_instance(Window* window){DPZoneScoped;
 	
 	Stopwatch watch = start_stopwatch();
 	
-	// check for validation layer support
+	//check for validation layer support
 	if(is_debugging){
 		VulkanInfo("checking validation layer support.");
 		b32 has_support = true;
@@ -872,7 +931,7 @@ create_instance(Window* window){DPZoneScoped;
 		}
 	}
 	
-	// set application info
+	//set application info
 	VkApplicationInfo app_info{VK_STRUCTURE_TYPE_APPLICATION_INFO};
 	app_info.pApplicationName   = (char*)window->title.str;
 	app_info.applicationVersion = VK_MAKE_VERSION(1,0,0);
@@ -890,10 +949,10 @@ create_instance(Window* window){DPZoneScoped;
 	validation_features.enabledValidationFeatureCount  = (is_debugging? ArrayCount(validation_features_arr) : 0);
 	validation_features.pEnabledValidationFeatures     = validation_features_arr;
 	
-	// get required extensions
+	//required extensions to use
 	VulkanInfo("getting required extensions.");
 #if DESHI_WINDOWS
-	const char* extensions[] = {
+	const char* required_extensions[] = {
 		VK_KHR_SURFACE_EXTENSION_NAME,
 		VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 #  if BUILD_INTERNAL
@@ -901,7 +960,7 @@ create_instance(Window* window){DPZoneScoped;
 #  endif //#if BUILD_INTERNAL
 	};
 #elif DESHI_LINUX //#if DESHI_WINDOWS
-	const char* extensions[] = {
+	const char* required_extensions[] = {
 		VK_KHR_SURFACE_EXTENSION_NAME,
 		VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
 #  if BUILD_INTERNAL
@@ -912,6 +971,49 @@ create_instance(Window* window){DPZoneScoped;
 #  error "unhandled platform/vulkan interaction"
 #endif //#else //#elif DESHI_LINUX //#if DESHI_WINDOWS
 	
+	//optional extensions to use
+	const char* optional_extensions[] = {
+		VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME,
+	};
+	b8* optional_extensions_enabled[] = {
+		&vk_swapchain_colorspace_extension_enabled,
+	};
+	StaticAssertAlways(ArrayCount(optional_extensions) == ArrayCount(optional_extensions_enabled));
+	
+	//query available extensions
+	u32 available_extensions_count = 0;
+	vkEnumerateInstanceExtensionProperties(0, &available_extensions_count, 0);
+	VkExtensionProperties* available_extensions = array_create_with_count(VkExtensionProperties, available_extensions_count, deshi_temp_allocator);
+	vkEnumerateInstanceExtensionProperties(0, &available_extensions_count, available_extensions);
+	
+	//build the valid extensions array to pass to instance creation
+	VulkanNotice("Enabled extensions:");
+	u32 extensions_count = 0;
+	const char* extensions[ArrayCount(required_extensions) + ArrayCount(optional_extensions)] = {};
+	for(u32 i = 0; i < ArrayCount(required_extensions); i++){
+		b8 extension_found = false;
+		for(u32 j = 0; j < available_extensions_count; j++){
+			if(strncmp(required_extensions[i], available_extensions[j].extensionName, VK_MAX_EXTENSION_NAME_SIZE) == 0){
+				extension_found = true;
+				extensions[extensions_count++] = available_extensions[j].extensionName;
+				VulkanNotice((const char*)available_extensions[j].extensionName);
+				break;
+			}
+		}
+		Assert(extension_found);
+	}
+	for(u32 i = 0; i < ArrayCount(optional_extensions); i++){
+		for(u32 j = 0; j < available_extensions_count; j++){
+			if(strncmp(optional_extensions[i], available_extensions[j].extensionName, VK_MAX_EXTENSION_NAME_SIZE) == 0){
+				extensions[extensions_count++] = available_extensions[j].extensionName;
+				*optional_extensions_enabled[i] = true;
+				VulkanNotice((const char*)available_extensions[j].extensionName);
+				break;
+			}
+		}
+	}
+	
+	
 	//setup instance debug messenger
 	VkDebugUtilsMessengerCreateInfoEXT debug_create_info{VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT};
 	debug_create_info.messageSeverity = vk_callback_severities;
@@ -921,7 +1023,7 @@ create_instance(Window* window){DPZoneScoped;
 	//create the instance
 	VkInstanceCreateInfo create_info{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
 	create_info.pApplicationInfo        = &app_info;
-	create_info.enabledExtensionCount   = (u32)ArrayCount(extensions);
+	create_info.enabledExtensionCount   = extensions_count;
 	create_info.ppEnabledExtensionNames = extensions;
 	if(is_debugging){
 		create_info.enabledLayerCount   = (u32)ArrayCount(validation_layers);
@@ -1244,13 +1346,37 @@ create_swapchain(Window* window){DPZoneScoped;
 	}
 	
 	// choose swapchain's surface format 
+	VulkanDebug("Supported swapchain formats:");
+	u32 surface_score = 0;
 	wininf->surface_format = wininf->support_details.formats[0];
 	forI(wininf->support_details.formats.count()){
 		auto format = wininf->support_details.formats[i];
-		if( format.format == VK_FORMAT_B8G8R8A8_SRGB &&
-		   format.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT){
+		VulkanDebug("format: ", (u32)format.format, "; color space: ", (u32)format.colorSpace);
+		if(vk_swapchain_colorspace_extension_enabled){
+			if(format.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT){
+				if(format.format == VK_FORMAT_R8G8B8A8_SRGB && surface_score < 6){
+					wininf->surface_format = format;
+					surface_score = 6;
+				}else if(format.format == VK_FORMAT_B8G8R8A8_SRGB && surface_score < 5){
+					wininf->surface_format = format;
+					surface_score = 5;
+				}
+			}else if(format.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT){
+				if(format.format == VK_FORMAT_R8G8B8A8_SRGB && surface_score < 4){
+					wininf->surface_format = format;
+					surface_score = 4;
+				}else if(format.format == VK_FORMAT_B8G8R8A8_SRGB && surface_score < 3){
+					wininf->surface_format = format;
+					surface_score = 3;
+				}
+			}
+		}
+		if(format.format == VK_FORMAT_R8G8B8A8_SRGB && surface_score < 2){
 			wininf->surface_format = format;
-			break;
+			surface_score = 2;
+		}else if(format.format == VK_FORMAT_B8G8R8A8_SRGB && surface_score < 1){
+			wininf->surface_format = format;
+			surface_score = 1;
 		}
 	}
 	
@@ -1428,11 +1554,9 @@ create_render_pass_and_frames(Window* window){DPZoneScoped;
 		depth_image->memory_properties = GraphicsMemoryPropertyFlag_DeviceLocal;
 		depth_image->update();
 		
-		color_image_view->format = color_image->format;
 		color_image_view->aspect_flags = GraphicsImageViewAspectFlags_Color;
 		color_image_view->update();
 		
-		depth_image_view->format = depth_image->format;
 		depth_image_view->aspect_flags = GraphicsImageViewAspectFlags_Depth;
 		depth_image_view->update();
 		
@@ -1509,11 +1633,9 @@ recreate_frames(Window* window){DPZoneScoped;
 		depth_image->extent = {window->width, window->height};
 		graphics_image_update(depth_image);
 		
-		color_image_view->format = color_image->format;
 		color_image_view->aspect_flags = GraphicsImageViewAspectFlags_Color;
 		graphics_image_view_update(color_image_view);
 		
-		depth_image_view->format = depth_image->format;
 		depth_image_view->aspect_flags = GraphicsImageViewAspectFlags_Depth;
 		graphics_image_view_update(depth_image_view);
 		
@@ -2233,9 +2355,11 @@ graphics_image_update(GraphicsImage* x){DPZoneScoped;
 	vkDestroyImage(vk_device, get_handle(x), vk_allocator);
 	vkFreeMemory(vk_device, get_memory_handle(x), vk_allocator);
 	
-	create_image(x->extent.x, x->extent.y, 1, 
+	create_image(x->extent.x, x->extent.y, ClampMin(1, x->mip_levels),
 				 graphics_sample_count_to_vulkan(x->samples),
 				 graphics_format_to_vulkan(x->format),
+				 graphics_image_type_to_vulkan(x->type),
+				 ClampMin(1, x->layers),
 				 (x->linear_tiling ? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL),
 				 graphics_image_usage_to_vulkan(x->usage),
 				 graphics_memory_properties_to_vulkan(x->memory_properties),
@@ -2254,7 +2378,7 @@ graphics_image_destroy(GraphicsImage* x){DPZoneScoped;
 }
 
 void
-graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent){DPZoneScoped;
+graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent, u32 layer){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsImage pointer.");
 	
 	if(!(get_handle(x) && get_memory_handle(x))){
@@ -2269,11 +2393,10 @@ graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent){D
 		return;
 	}
 	
-	VkDeviceSize image_memsize = extent.x * extent.y * 4;
-	
 	// create a staging buffer so we can map the pixel data from the CPU
 	BufferVk stage{};
-	create_and_map_buffer(&stage.buffer, &stage.memory, &image_memsize, (size_t)image_memsize,pixels,
+	VkDeviceSize image_memsize = extent.x * extent.y * graphics_format_to_bytes(x->format);
+	create_and_map_buffer(&stage.buffer, &stage.memory, &image_memsize, (size_t)image_memsize, pixels,
 						  VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 						  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	
@@ -2290,8 +2413,8 @@ graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent){D
 	barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
 	barrier.subresourceRange.baseMipLevel   = 0;
 	barrier.subresourceRange.levelCount     = 1; // TODO(sushi) mipmaps
-	barrier.subresourceRange.baseArrayLayer = 0; //NOTE(delle) use image flags here?
-	barrier.subresourceRange.layerCount     = 1; //NOTE(delle) use image flags here?
+	barrier.subresourceRange.baseArrayLayer = layer;
+	barrier.subresourceRange.layerCount     = 1;
 	vkCmdPipelineBarrier(cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,0,0,0,0,1, &barrier);
 	
 	VkBufferImageCopy region{};
@@ -2302,8 +2425,8 @@ graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent){D
 	region.imageExtent       = {(u32)extent.x, (u32)extent.y, 1};
 	region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
 	region.imageSubresource.mipLevel       = 0;
-	region.imageSubresource.baseArrayLayer = 0; //NOTE(delle) use image flags here?
-	region.imageSubresource.layerCount     = 1; //NOTE(delle) use image flags here?
+	region.imageSubresource.baseArrayLayer = layer;
+	region.imageSubresource.layerCount     = 1;
 	vkCmdCopyBufferToImage(cmdbuf, stage.buffer, get_handle(x), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 	
 	barrier.srcAccessMask       = 0;
@@ -2316,8 +2439,8 @@ graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent){D
 	barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
 	barrier.subresourceRange.baseMipLevel   = 0;
 	barrier.subresourceRange.levelCount     = 1; // TODO(sushi) mipmaps
-	barrier.subresourceRange.baseArrayLayer = 0; //NOTE(delle) use image flags here?
-	barrier.subresourceRange.layerCount     = 1; //NOTE(delle) use image flags here?
+	barrier.subresourceRange.baseArrayLayer = layer;
+	barrier.subresourceRange.layerCount     = 1;
 	vkCmdPipelineBarrier(cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,0,0,0,0,1, &barrier);
 	
 	end_single_time_commands(cmdbuf);
@@ -2333,7 +2456,9 @@ graphics_image_view_update(GraphicsImageView* x){DPZoneScoped;
 	
 	vkDestroyImageView(vk_device, get_handle(x), vk_allocator);
 	
-	get_handle(x) = create_image_view(get_handle(x->image), graphics_format_to_vulkan(x->format), graphics_image_view_aspect_to_vulkan(x->aspect_flags), 1);
+	get_handle(x) = create_image_view(get_handle(x->image), graphics_format_to_vulkan(x->image->format),
+									  graphics_image_type_to_vulkan_view(x->image->type, x->image->layers), graphics_image_view_aspect_to_vulkan(x->aspect_flags),
+									  ClampMin(1, x->image->mip_levels), ClampMin(1, x->image->layers));
 	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)get_handle(x), (char*)x->debug_name.str);
 }
 

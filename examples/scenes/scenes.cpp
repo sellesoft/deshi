@@ -38,13 +38,13 @@ int main() {
 	window_show(win);
 	graphics_init(win);
 	assets_init(win);
-	render_init();
-
+	render_init(win, true);
+	
 	render_set_active_window(win);
-
+	
 	Texture* alex = assets_texture_create_from_path_simple(str8l("alex"), str8l("alex.png"));
 	Model* box = assets_model_create_from_obj(str8l("box.obj"), 0);
-
+	
 	ShaderStages stages = {0};
 	stages.vertex = assets_shader_load_from_path(str8l("dither.vert"), str8l("dither.vert"), ShaderType_Vertex);
 	stages.fragment = assets_shader_load_from_path(str8l("dither.frag"), str8l("dither.frag"), ShaderType_Fragment);
@@ -52,23 +52,23 @@ int main() {
 				ShaderResourceType_Texture,
 				ShaderResourceType_UBO,
 			});
-
+	
 	struct {
 		f32 time;
 	} ubo;
-
+	
 	UBO* ubo_resource = assets_ubo_create(sizeof(ubo));
-
+	
 	auto resources = array<ShaderResource>::create_with_count(2, deshi_temp_allocator);
 	resources[0].type = ShaderResourceType_Texture;
 	resources[0].texture = alex;
 	resources[1].type = ShaderResourceType_UBO;
 	resources[1].ubo = ubo_resource;
-
+	
 	Material* dithermat = assets_material_create(str8l("dither"), stages, resources.ptr);
 	
 	box->batch_array[0].material = dithermat;
-
+	
 	Camera* camera = render_camera_create();
 	camera->position = Vec3(0,0,0);
 	camera->rotation = Vec3(0,0,0);
@@ -76,12 +76,12 @@ int main() {
 	render_camera_update_perspective_projection(camera, win->width, win->height, 90, 0.1, 1000);
 	render_camera_update_view(camera);
 	render_set_active_camera(camera);
-
+	
 	mat4 transform = mat4::TransformationMatrix(
 			Vec3(0, 0, 2),
 			Vec3(0, 0, 0),
 			Vec3(1, 1, 1));
-
+	
 	while(platform_update()) {
 		transform = mat4::TransformationMatrix(Vec3(0, 0, 3), Vec3(0, g_time->totalTime/3000.f*45, 0), vec3::ONE);
 		ubo.time = g_time->totalTime;

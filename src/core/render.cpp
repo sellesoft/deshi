@@ -5,13 +5,33 @@ RenderGlobal __deshi__g_scene;
 RenderGlobal* g_scene = &__deshi__g_scene;
 
 void 
-render_init(){DPZoneScoped;
+render_init(Window* window, b32 clear){DPZoneScoped;
 	DeshiStageInitStart(DS_RENDER, DS_MEMORY|DS_GRAPHICS|DS_ASSETS, "Attempted to initialize the Render module before initializing the Memory, Graphics, or Assets modules.");
 	
 	*g_scene = {};
 	memory_pool_init(g_scene->pools.camera, 4);
 	memory_pool_init(g_scene->pools.voxel_chunks, 8);
 	array_init(g_scene->model_draw_commands, 4, deshi_allocator);
+	
+	g_scene->render_pass = graphics_render_pass_allocate();
+	g_scene->render_pass->debug_name = str8l("<scene> render pass");
+	g_scene->render_pass->use_color_attachment = true;
+	g_scene->render_pass->color_attachment.format = graphics_format_of_presentation_frames(window);
+	g_scene->render_pass->color_attachment.load_op = (clear) ? GraphicsLoadOp_Clear : GraphicsLoadOp_Load;
+	g_scene->render_pass->color_attachment.store_op = GraphicsStoreOp_Store;
+	g_scene->render_pass->color_attachment.stencil_load_op = GraphicsLoadOp_Dont_Care;
+	g_scene->render_pass->color_attachment.stencil_store_op = GraphicsStoreOp_Dont_Care;
+	g_scene->render_pass->color_attachment.initial_layout = GraphicsImageLayout_Present;
+	g_scene->render_pass->color_attachment.final_layout = GraphicsImageLayout_Present;
+	g_scene->render_pass->use_depth_attachment = true;
+	g_scene->render_pass->depth_attachment.format = graphics_current_present_frame_of_window(window)->render_pass->depth_attachment.format;
+	g_scene->render_pass->depth_attachment.load_op = (clear) ? GraphicsLoadOp_Clear : GraphicsLoadOp_Load;
+	g_scene->render_pass->depth_attachment.store_op = GraphicsStoreOp_Store;
+	g_scene->render_pass->depth_attachment.stencil_load_op = (clear) ? GraphicsLoadOp_Clear : GraphicsLoadOp_Load;
+	g_scene->render_pass->depth_attachment.stencil_store_op = GraphicsStoreOp_Dont_Care;
+	g_scene->render_pass->depth_attachment.initial_layout = (clear) ? GraphicsImageLayout_Undefined : GraphicsImageLayout_Depth_Stencil_Attachment_Optimal;
+	g_scene->render_pass->depth_attachment.final_layout = GraphicsImageLayout_Depth_Stencil_Attachment_Optimal;
+	graphics_render_pass_update(g_scene->render_pass);
 	
 	ShaderStages stages = {};
 	stages.vertex = assets_shader_load_from_source(str8l("voxel.vert"), baked_shader_voxel_vert, ShaderType_Vertex);
@@ -42,8 +62,8 @@ render_update(){DPZoneScoped;
 	
 	auto win   = g_scene->active.window;
 	auto cam   = g_scene->active.camera;
+	auto pass  = g_scene->render_pass;
 	auto frame = graphics_current_present_frame_of_window(win);
-	auto pass  = frame->render_pass;
 	
 	GraphicsPipeline* last_pipeline = 0;
 	
@@ -154,6 +174,12 @@ render_camera_update_view(Camera* camera){DPZoneScoped;
 }
 
 void
+render_camera_set_view(Camera* camera, mat4 view){DPZoneScoped;
+	RenderAssert(camera, "passed null Camera pointer.");
+	camera->view = view;
+}
+
+void
 render_camera_update_perspective_projection(Camera* camera, u32 width, u32 height, f32 fov, f32 near_z, f32 far_z){DPZoneScoped;
 	RenderAssert(camera, "passed null Camera pointer.");
 	camera->proj = Math::PerspectiveProjectionMatrix(width, height, fov, near_z, far_z);
@@ -175,6 +201,15 @@ render_camera_update_orthographic_projection(Camera* camera, f32 right, f32 left
 						0, B, 0, E,
 						0, 0, C, F,
 						0, 0, 0, 1);
+}
+
+void
+render_camera_set_projection(Camera* camera, mat4 projection){DPZoneScoped;
+	RenderAssert(camera, "passed null Camera pointer.");
+	camera->proj = projection;
+#if DESHI_VULKAN
+	camera->proj.arr[5] *= -1;
+#endif //#if DESHI_VULKAN
 }
 
 void

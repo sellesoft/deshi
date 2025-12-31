@@ -26,7 +26,7 @@
   window_show(window);                            \
   graphics_init(window);                          \
   assets_init(window);                            \
-  render_init();                                  \
+  render_init(window, true);                      \
   render_set_active_window(window);               \
   render_temp_init(window, 0xffff);               \
   ui_init(window);                                \
@@ -47,7 +47,7 @@
   window_show(window);                               \
   graphics_init(window);                             \
   assets_init(window);                               \
-  render_init();                                     \
+  render_init(window, true);                         \
   render_set_active_window(window);                  \
   render_temp_init(window, 0xffff);                  \
   ui_init(window);                                   \

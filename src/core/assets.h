@@ -265,6 +265,7 @@ Mesh* assets_mesh_get_by_uid(u64 uid);
 //// @texture
 
 
+//TODO(delle) handle non RGBA formats properly
 typedef Type ImageFormat; enum{ //NOTE value = bytes per pixel
 	ImageFormat_BW   = 1,
 	ImageFormat_BWA  = 2,
@@ -307,6 +308,7 @@ typedef struct Texture{
 	s32 width;
 	s32 height;
 	s32 depth;
+	u32 layers;
 	s32 mipmaps;
 	u8* pixels; //pixel data allocated during creation
 	ImageFormat format;
@@ -321,12 +323,14 @@ typedef struct Texture{
 	GraphicsDescriptorSet* ui_descriptor_set;
 }Texture;
 
+//Returns a pointer to the created `Texture` object without initial pixel data of size `width*height` in the byte format specified by `format`
+Texture* assets_texture_create(str8 name, u32 width, u32 height, u32 layers, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode);
+
 //Returns a pointer to the created `Texture` object from an image file at `path`
 //  `format` determines the image format after loading it (does not have to be the same as the format on disk)
 //  `type`, `filter`, and `uvMode` arguments determine usage in `Render`
 //  `generateMipmaps` determines whether `Render` should generate and use mipmaps for rendering this texture
 //  the `pixels` var of the created `Texture` object is freed from memory unless `keepLoaded` is true
-//  calls `render_load_texture()` after creation
 Texture* assets_texture_create_from_path(str8 name, str8 path, ImageFormat format, TextureType type, TextureFilter filter,
 										 TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps);
 
@@ -341,14 +345,12 @@ FORCE_INLINE Texture* assets_texture_create_from_path_simple(str8 name, str8 pat
 //  `format` determines the image format after loading it
 //  `type`, `filter`, and `uvMode` arguments determine usage in `Render`
 //  `generateMipmaps` determines whether `Render` should generate and use mipmaps for rendering this texture
-//  calls `render_load_texture()` after creation
 Texture* assets_texture_create_from_memory(void* data, str8 name, u32 width, u32 height, ImageFormat format,
 										   TextureType type, TextureFilter filter, TextureAddressMode uvMode,
 										   b32 generateMipmaps);
 
 //Returns a pointer to the created `Texture` object from pixel data at the `data` pointer of size `width*height` in the byte format specified by `format`
 //  `format` determines the image format after loading it
-//  calls `render_load_texture()` after creation
 FORCE_INLINE Texture* assets_texture_create_from_memory_simple(void* data, str8 name, u32 width, u32 height, ImageFormat format){
 	return assets_texture_create_from_memory(data, name, width, height, format, TextureType_TwoDimensional, TextureFilter_Nearest,
 											 TextureAddressMode_Repeat, true);
@@ -357,8 +359,11 @@ FORCE_INLINE Texture* assets_texture_create_from_memory_simple(void* data, str8 
 //Deletes the `Texture` object at `texture` after calling `render_unload_texture()`
 void assets_texture_delete(Texture* texture);
 
-// Updates the region at 'offset' of size 'extent' in 'texture' using its internal pixels array
-void assets_texture_update(Texture* texture, vec2i offset, vec2i extent);
+// Updates the region at 'offset' of size 'extent' in the 'layer' of 'texture' using 'pixels' or its internal pixels array
+void assets_texture_update(Texture* texture, void* pixels, vec2i offset, vec2i extent, u32 layer);
+
+// Updates the region at 'offset' of size 'extent' in the 'layer' of 'texture' using the pixels from an image file at `path`
+void assets_texture_update_from_file(Texture* texture, str8 name, vec2i offset, vec2i extent, u32 layer);
 
 //Returns a pointer to the default `Texture` object which is created when `assets_init()` is called
 FORCE_INLINE Texture* assets_texture_null(){ return g_assets->null_texture; };

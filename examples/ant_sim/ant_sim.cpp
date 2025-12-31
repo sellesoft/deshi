@@ -2293,8 +2293,8 @@ void update_ui(){
 		ui_end_immediate_branch();
 	}
 	
-	assets_texture_update(rendering.background.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
-	assets_texture_update(rendering.foreground.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
+	assets_texture_update(rendering.background.texture, nullptr, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT}, 0);
+	assets_texture_update(rendering.foreground.texture, nullptr, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT}, 0);
 	
 	//zooming (even though ui handles moving the world for us, we still need to handle zooming)
 	vec2 mouse_pos = input_mouse_position();

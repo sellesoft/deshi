@@ -48,6 +48,7 @@ Index:
 
 
 #include "kigu/array.h"
+#include "kigu/color.h"
 
 
 struct Window;
@@ -175,6 +176,8 @@ typedef Type GraphicsFormat; enum{
 	GraphicsFormat_R8G8B8A8_SRGB,
 	GraphicsFormat_R8G8B8A8_UNorm,
 	GraphicsFormat_B8G8R8A8_UNorm,
+	GraphicsFormat_R16_UInt,
+	GraphicsFormat_R16G16_UNorm,
 	GraphicsFormat_Depth16_UNorm,
 	GraphicsFormat_Depth32_Float,
 	GraphicsFormat_Depth32_Float_Stencil8_UInt,
@@ -400,8 +403,8 @@ typedef Type GraphicsMemoryMappingBehavoir; enum{
 
 // The dimensions of a given image.
 typedef Type GraphicsImageType; enum{
-	GraphicsImageType_1D,
 	GraphicsImageType_2D,
+	GraphicsImageType_1D,
 	GraphicsImageType_3D,
 };
 
@@ -599,6 +602,7 @@ typedef struct GraphicsImage{
 	str8 debug_name;
 	
 	GraphicsFormat format;
+	GraphicsImageType type;
 	GraphicsImageUsage usage;
 	GraphicsSampleCount samples;
 	
@@ -611,7 +615,8 @@ typedef struct GraphicsImage{
 	// How the memory of the image is intended to be used.
 	GraphicsMemoryPropertyFlags memory_properties;
 	
-	u64 mip_levels;
+	u32 layers;
+	u32 mip_levels;
 	
 	GRAPHICS_INTERNAL_BEGIN{
 		void* handle;
@@ -628,13 +633,12 @@ void graphics_image_destroy(GraphicsImage* x);
 // Uploads the given pixels to the given GraphicsImage within the region specified by 'offset' and 'extent'.
 //   This function does nothing and emits a warning if either axis in 'extent' is 0, the region
 //     is completely outside the bounds of the image.
-void graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent);
+void graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent, u32 layer);
 
 
 typedef struct GraphicsImageView{
 	str8 debug_name;
 	
-	GraphicsFormat format;
 	GraphicsImageViewAspectFlags aspect_flags;
 	
 	GraphicsImage* image;
@@ -692,7 +696,7 @@ namespace graphics{
 		static Image* allocate(){ return (Image*)graphics_image_allocate(); }
 		void update(){ graphics_image_update(this); }
 		void destroy(){ graphics_image_destroy(this); }
-		void write(u8* pixels, vec2i offset, vec2i extent){ graphics_image_write(this, pixels, offset, extent); }
+		void write(u8* pixels, vec2i offset, vec2i extent, u32 layer){ graphics_image_write(this, pixels, offset, extent, layer); }
 	};
 	
 	struct ImageView : public GraphicsImageView{

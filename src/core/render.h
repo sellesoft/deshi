@@ -45,6 +45,7 @@ StartLinkageC();
 
 //Global scene object used for keep track of various things.
 typedef struct RenderGlobal{
+	GraphicsRenderPass* render_pass;
 	
 	//Collection of things allocated and managed by the scene.
 	struct{
@@ -90,8 +91,8 @@ typedef struct RenderGlobal{
 
 extern RenderGlobal* g_scene;
 
-//Initialize the scene module. 
-void render_init();
+//Initialize the scene module with the 'window' and specify whether or not to 'clear' the screen when updating.
+void render_init(Window* window, b32 clear);
 
 //Renders the scene to the active window using the active camera
 void render_update();
@@ -126,14 +127,20 @@ typedef struct Camera{
 //Allocates and returns a pointer to a camera
 Camera* render_camera_create();
 
-//Updates a camera's projection and view matrices based on its internal properties
+//Updates a camera's view matrix based on its internal properties
 void render_camera_update_view(Camera* camera);
+
+//Sets a camera's view matrix
+void render_camera_set_view(Camera* camera, mat4 view);
 
 //Updates the camera to use perspective projection
 void render_camera_update_perspective_projection(Camera* camera, u32 width, u32 height, f32 fov, f32 near_z, f32 far_z);
 
 //Updates the camera to use orthographic projection
 void render_camera_update_orthographic_projection(Camera* camera, vec2 x_bounds, vec2 y_bounds, f32 z_bounds);
+
+//Sets a camera's projection matrix
+void render_camera_set_projection(Camera* camera, mat4 projection);
 
 //Deallocates the given camera
 void render_camera_destroy(Camera* camera);
